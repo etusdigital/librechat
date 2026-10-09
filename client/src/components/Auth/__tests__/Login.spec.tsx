@@ -251,4 +251,17 @@ describe('OAuth rejection redirects', () => {
       expect(mockShowToast).not.toHaveBeenCalled();
     },
   );
+
+  test('keeps the AI access message on the page when the router refused the login', async () => {
+    enterAt('?redirect=false&error=etus_no_ai_access');
+
+    const { findByText } = setup();
+
+    expect(
+      await findByText(
+        "Your AI access has not been enabled yet. Ask the person who manages your company's systems.",
+      ),
+    ).toBeInTheDocument();
+    expect(mockShowToast).not.toHaveBeenCalled();
+  });
 });

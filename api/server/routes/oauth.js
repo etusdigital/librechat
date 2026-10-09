@@ -20,6 +20,7 @@ const {
 const { createOAuthHandler } = require('~/server/controllers/auth/oauth');
 const { findBalanceByUser, upsertBalanceFields } = require('~/models');
 const { getAppConfig } = require('~/server/services/Config');
+const { withAccessDeniedRedirect } = require('~/server/services/Etus/routerGate');
 
 const setBalanceConfig = createSetBalanceConfig({
   getAppConfig,
@@ -45,7 +46,7 @@ router.use(loginLimiter);
 
 const oauthHandler = createOAuthHandler();
 const authenticateOpenIDCallback = createOpenIDCallbackAuthenticator({
-  passport,
+  passport: withAccessDeniedRedirect(passport, domains.client),
   logger,
   ...authFailureRedirectOptions,
 });

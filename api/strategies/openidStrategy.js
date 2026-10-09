@@ -31,6 +31,7 @@ const { resizeAvatar } = require('~/server/services/Files/images/avatar');
 const { findUser, createUser, updateUser, findRolesByNames } = require('~/models');
 const { getAppConfig } = require('~/server/services/Config');
 const { syncHubAccess } = require('~/server/services/Etus/access');
+const { AI_ACCESS_DENIED, assertRouterAccess } = require('~/server/services/Etus/routerGate');
 const getLogStores = require('~/cache/getLogStores');
 
 /**
@@ -585,6 +586,8 @@ async function processOpenIDAuth(tokenset, existingUsersOnly = false) {
     throw new Error('Email domain not allowed');
   }
 
+  await assertRouterAccess(tokenset.id_token, email);
+
   const result = await findOpenIDUser({
     findUser,
     email: email,
@@ -860,6 +863,9 @@ function createOpenIDCallback(existingUsersOnly) {
         return done(null, false, { message: err.message });
       }
       if (err.message && err.message.includes('role to log in')) {
+        return done(null, false, { message: err.message });
+      }
+      if (err.message === AI_ACCESS_DENIED) {
         return done(null, false, { message: err.message });
       }
       logger.error('[openidStrategy] login failed', err);

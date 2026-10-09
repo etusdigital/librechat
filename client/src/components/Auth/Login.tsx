@@ -22,6 +22,8 @@ const oauthErrorKeys: Record<string, TranslationKeys> = {
   [ErrorTypes.AUTH_BANNED]: 'com_auth_error_login_ban',
 };
 
+const ETUS_AI_ACCESS_DENIED = 'etus_no_ai_access';
+
 function Login() {
   const localize = useLocalize();
   const { showToast } = useToastContext();
@@ -31,6 +33,7 @@ function Login() {
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
   const disableAutoRedirect = searchParams.get('redirect') === 'false';
+  const aiAccessDenied = searchParams.get('error') === ETUS_AI_ACCESS_DENIED;
 
   const [isAutoRedirectDisabled, setIsAutoRedirectDisabled] = useState(disableAutoRedirect);
 
@@ -75,7 +78,8 @@ function Login() {
     startupConfig?.openidLoginEnabled &&
     startupConfig?.openidAutoRedirect &&
     startupConfig?.serverDomain &&
-    !isAutoRedirectDisabled;
+    !isAutoRedirectDisabled &&
+    !aiAccessDenied;
 
   useEffect(() => {
     if (shouldAutoRedirect) {
@@ -113,6 +117,9 @@ function Login() {
 
   return (
     <>
+      {aiAccessDenied && (
+        <ErrorMessage>{localize('com_auth_error_etus_no_ai_access')}</ErrorMessage>
+      )}
       {error != null && <ErrorMessage>{localize(getLoginError(error))}</ErrorMessage>}
       {startupConfig?.emailLoginEnabled === true && (
         <LoginForm

@@ -2534,6 +2534,54 @@ describe('setupOpenId', () => {
       expect(details).toEqual({ message: 'Email domain not allowed' });
     });
   });
+
+  describe('ETUS router access gate', () => {
+    const originalFetch = global.fetch;
+
+    beforeEach(() => {
+      process.env.ETUS_DELEGATION_KEY = 'sk-delegation';
+      global.fetch = jest.fn();
+    });
+
+    afterEach(() => {
+      delete process.env.ETUS_DELEGATION_KEY;
+      global.fetch = originalFetch;
+    });
+
+    it('checks the router with the id token of this sign-in and lets the person in', async () => {
+      global.fetch.mockResolvedValue({ ok: true, status: 200 });
+
+      const { user } = await validate(tokenset);
+
+      expect(user).toBeTruthy();
+      const [url, init] = global.fetch.mock.calls[0];
+      expect(url).toBe('https://router.etus.io/v1/models');
+      expect(init.headers['x-etus-id-token']).toBe('fake_id_token');
+    });
+
+    it('refuses the login before creating the user when the router answers AUTH_002', async () => {
+      global.fetch.mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: async () => ({ error: { code: 'AUTH_002' } }),
+      });
+
+      const { user, details } = await validate(tokenset);
+
+      expect(user).toBe(false);
+      expect(details).toEqual({ message: 'etus_no_ai_access' });
+      expect(createUser).not.toHaveBeenCalled();
+      expect(updateUser).not.toHaveBeenCalled();
+    });
+
+    it('lets the person in when the router is down', async () => {
+      global.fetch.mockResolvedValue({ ok: false, status: 503 });
+
+      const { user } = await validate(tokenset);
+
+      expect(user).toBeTruthy();
+    });
+  });
 });
 
 describe('getRoleSource', () => {

@@ -4,7 +4,7 @@ jest.mock('@librechat/data-schemas', () => ({
 jest.mock('~/models', () => ({}));
 jest.mock('../hubClient', () => ({ pushSettingsCatalog: jest.fn() }));
 
-const { buildCatalog } = require('../catalog');
+const { buildCatalog, usableModels } = require('../catalog');
 
 const fieldOf = (catalog, key) => catalog.fields.find((field) => field.key === key);
 
@@ -72,5 +72,19 @@ describe('buildCatalog', () => {
     const options = fieldOf(many, 'prompts').options;
     expect(options).toHaveLength(2000);
     expect(options[0].label).toHaveLength(200);
+  });
+});
+
+describe('usableModels', () => {
+  const models = { openAI: ['gpt-4o'], bedrock: ['titan'], 'ETUS AI': ['rapido', 'dev-continuo'] };
+
+  it('keeps only the configured custom endpoints', () => {
+    expect(usableModels(models, [{ name: 'ETUS AI' }])).toEqual({
+      'ETUS AI': ['rapido', 'dev-continuo'],
+    });
+  });
+
+  it('keeps everything when no custom endpoint is configured', () => {
+    expect(usableModels(models, undefined)).toEqual(models);
   });
 });

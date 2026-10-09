@@ -36,6 +36,17 @@ function toOptions(items) {
   return options.sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
 }
 
+/** Built-in endpoints list stock models even without a key; with our own endpoints configured, only those are real. */
+function usableModels(models, customEndpoints) {
+  const names = new Set((customEndpoints ?? []).map((endpoint) => endpoint?.name).filter(Boolean));
+  if (!names.size) {
+    return models;
+  }
+  return Object.fromEntries(
+    Object.entries(models ?? {}).filter(([endpoint]) => names.has(endpoint)),
+  );
+}
+
 function modelOptions(modelSpecs, models) {
   const specs = (modelSpecs?.list ?? []).map((spec) => ({
     id: `spec:${spec.name}`,
@@ -161,7 +172,7 @@ async function collectCatalog({ appConfig, loadModels }) {
     agents,
     mcpServers,
     modelSpecs: appConfig?.modelSpecs,
-    models,
+    models: usableModels(models, appConfig?.endpoints?.custom),
   });
 }
 
@@ -176,6 +187,7 @@ async function pushCatalog({ appConfig, loadModels }) {
 
 module.exports = {
   buildCatalog,
+  usableModels,
   collectCatalog,
   pushCatalog,
 };

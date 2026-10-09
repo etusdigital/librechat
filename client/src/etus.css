@@ -1,6 +1,6 @@
 /*
  * Patch do fork (Etus): a identidade visual dos apps da nexus-stack, nas mesmas cores e fonte
- * (tokens de artifacts/web/src/index.css). Carregado depois de style.css, só redefine variáveis,
+ * (tokens de artifacts/web/src/index.css). Carregado depois de style.css, só redefine variáveis (no formato "R G B" que o Tailwind do LibreChat envolve em rgb()),
  * sem tocar em componente nenhum, para o fork continuar fácil de atualizar.
  */
 
@@ -16,12 +16,12 @@
   --theme-font-family: 'Space Grotesk', Inter, ui-sans-serif, system-ui, sans-serif;
 
   /* Paleta da marca, nos mesmos nomes que o LibreChat já usa para as escalas. */
-  --etus-ink: #151514;
-  --etus-paper: #fbfaf9;
-  --etus-green: #3be476;
-  --etus-green-deep: #066e3e;
-  --etus-green-soft: #e7ffdf;
-  --etus-green-bright: #8df768;
+  --etus-ink: 21 21 20;
+  --etus-paper: 251 250 249;
+  --etus-green: 59 228 118;
+  --etus-green-deep: 6 110 62;
+  --etus-green-soft: 231 255 223;
+  --etus-green-bright: 141 247 104;
 }
 
 html,
@@ -32,32 +32,32 @@ html,
 /* Claro */
 :root {
   --presentation: var(--etus-paper);
-  --surface-primary: #ffffff;
-  --surface-primary-alt: #f3f2ef;
+  --surface-primary: 255 255 255;
+  --surface-primary-alt: 243 242 239;
   --surface-primary-contrast: var(--etus-paper);
-  --surface-secondary: #ebe9e5;
-  --surface-secondary-alt: #f3f2ef;
-  --surface-tertiary: #f3f2ef;
-  --surface-tertiary-alt: #ebe9e5;
-  --surface-hover: #ebe9e5;
-  --surface-hover-alt: #e3e1dd;
+  --surface-secondary: 235 233 229;
+  --surface-secondary-alt: 243 242 239;
+  --surface-tertiary: 243 242 239;
+  --surface-tertiary-alt: 235 233 229;
+  --surface-hover: 235 233 229;
+  --surface-hover-alt: 227 225 221;
   --surface-active: var(--etus-green-soft);
   --surface-active-alt: var(--etus-green-soft);
   --surface-submit: var(--etus-green-deep);
   --surface-submit-hover: var(--etus-ink);
   --surface-chat: var(--etus-paper);
-  --surface-dialog: #ffffff;
+  --surface-dialog: 255 255 255;
   --header-primary: var(--etus-paper);
-  --header-hover: #ebe9e5;
+  --header-hover: 235 233 229;
   --text-primary: var(--etus-ink);
-  --text-secondary: #6e6d68;
-  --text-secondary-alt: #8a8984;
-  --text-tertiary: #6e6d68;
-  --border-light: #d6d4d1;
-  --border-medium: #d6d4d1;
-  --border-medium-alt: #c9c7c3;
-  --border-heavy: #bebbb7;
-  --border-xheavy: #8a8984;
+  --text-secondary: 110 109 104;
+  --text-secondary-alt: 138 137 132;
+  --text-tertiary: 110 109 104;
+  --border-light: 214 212 209;
+  --border-medium: 214 212 209;
+  --border-medium-alt: 201 199 195;
+  --border-heavy: 190 187 183;
+  --border-xheavy: 138 137 132;
   --ring-primary: var(--etus-green);
   --accent-primary: var(--etus-green-deep);
   --brand-purple: var(--etus-green-deep);
@@ -66,32 +66,32 @@ html,
 /* Escuro */
 .dark {
   --presentation: var(--etus-ink);
-  --surface-primary: #1f1f1e;
+  --surface-primary: 31 31 30;
   --surface-primary-alt: var(--etus-ink);
-  --surface-primary-contrast: #1f1f1e;
-  --surface-secondary: #3e3e3c;
-  --surface-secondary-alt: #2a2a29;
-  --surface-tertiary: #3e3e3c;
-  --surface-tertiary-alt: #2a2a29;
-  --surface-hover: #3e3e3c;
-  --surface-hover-alt: #4a4a47;
+  --surface-primary-contrast: 31 31 30;
+  --surface-secondary: 62 62 60;
+  --surface-secondary-alt: 42 42 41;
+  --surface-tertiary: 62 62 60;
+  --surface-tertiary-alt: 42 42 41;
+  --surface-hover: 62 62 60;
+  --surface-hover-alt: 74 74 71;
   --surface-active: var(--etus-green-deep);
   --surface-active-alt: var(--etus-green-deep);
   --surface-submit: var(--etus-green);
   --surface-submit-hover: var(--etus-green-bright);
   --surface-chat: var(--etus-ink);
-  --surface-dialog: #1f1f1e;
+  --surface-dialog: 31 31 30;
   --header-primary: var(--etus-ink);
-  --header-hover: #3e3e3c;
+  --header-hover: 62 62 60;
   --text-primary: var(--etus-paper);
-  --text-secondary: #bebbb7;
-  --text-secondary-alt: #a5a29e;
-  --text-tertiary: #bebbb7;
-  --border-light: #3e3e3c;
-  --border-medium: #3e3e3c;
-  --border-medium-alt: #4a4a47;
-  --border-heavy: #6e6d68;
-  --border-xheavy: #8a8984;
+  --text-secondary: 190 187 183;
+  --text-secondary-alt: 165 162 158;
+  --text-tertiary: 190 187 183;
+  --border-light: 62 62 60;
+  --border-medium: 62 62 60;
+  --border-medium-alt: 74 74 71;
+  --border-heavy: 110 109 104;
+  --border-xheavy: 138 137 132;
   --ring-primary: var(--etus-green-bright);
   --accent-primary: var(--etus-green);
   --brand-purple: var(--etus-green);

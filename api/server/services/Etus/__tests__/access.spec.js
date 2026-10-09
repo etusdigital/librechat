@@ -13,13 +13,18 @@ jest.mock('../groups', () => ({
   memberKeyOf: jest.requireActual('../groups').memberKeyOf,
   syncHubGroups: jest.fn(),
 }));
-jest.mock('~/models', () => ({}));
+jest.mock('~/models', () => ({
+  getUserById: jest.fn(),
+  updateUser: jest.fn(),
+}));
 
 const { logger } = require('@librechat/data-schemas');
 const { fetchUserSettings, isHubEnabled } = require('../hubClient');
 const { writeUserSettings } = require('../settingsCache');
 const { syncHubGroups } = require('../groups');
-const { syncHubAccess, sanitizeValues } = require('../access');
+const db = require('~/models');
+const { SystemRoles } = require('librechat-data-provider');
+const { syncHubAccess, sanitizeValues, hubRoleFor } = require('../access');
 
 const user = { _id: { toString: () => 'user-1' }, openidId: 'sub-1' };
 
@@ -87,6 +92,70 @@ describe('syncHubAccess', () => {
     isHubEnabled.mockReturnValue(true);
     expect(await syncHubAccess({ _id: 'x' })).toBe(false);
     expect(fetchUserSettings).not.toHaveBeenCalled();
+  });
+});
+
+describe('hub platform admin role', () => {
+  const answerWith = (fields) => ({ version: 1, groups: [], values: {}, ...fields });
+
+  beforeEach(() => {
+    isHubEnabled.mockReturnValue(true);
+  });
+
+  it('promotes a platform admin to ADMIN and logs it', async () => {
+    db.getUserById.mockResolvedValue({ role: SystemRoles.USER });
+    fetchUserSettings.mockResolvedValue(answerWith({ active: true, platformAdmin: true }));
+
+    expect(await syncHubAccess(user)).toBe(true);
+    expect(db.getUserById).toHaveBeenCalledWith('user-1', 'role');
+    expect(db.updateUser).toHaveBeenCalledWith('user-1', { role: SystemRoles.ADMIN });
+    expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('to ADMIN'));
+  });
+
+  it('demotes an active person who lost platform admin to USER', async () => {
+    db.getUserById.mockResolvedValue({ role: SystemRoles.ADMIN });
+    fetchUserSettings.mockResolvedValue(answerWith({ active: true, platformAdmin: false }));
+
+    await syncHubAccess(user);
+    expect(db.updateUser).toHaveBeenCalledWith('user-1', { role: SystemRoles.USER });
+    expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('from ADMIN to USER'));
+  });
+
+  it('leaves the role alone when it already matches', async () => {
+    db.getUserById.mockResolvedValue({ role: SystemRoles.ADMIN });
+    fetchUserSettings.mockResolvedValue(answerWith({ active: true, platformAdmin: true }));
+
+    await syncHubAccess(user);
+    expect(db.updateUser).not.toHaveBeenCalled();
+    expect(logger.info).not.toHaveBeenCalled();
+  });
+
+  it('does not touch the role when the hub omits platformAdmin', async () => {
+    db.getUserById.mockResolvedValue({ role: SystemRoles.ADMIN });
+    fetchUserSettings.mockResolvedValue(answerWith({ active: true }));
+
+    expect(await syncHubAccess(user)).toBe(true);
+    expect(db.getUserById).not.toHaveBeenCalled();
+    expect(db.updateUser).not.toHaveBeenCalled();
+  });
+
+  it('does not touch the role when the hub is down', async () => {
+    fetchUserSettings.mockResolvedValue(null);
+
+    expect(await syncHubAccess(user)).toBe(false);
+    expect(db.getUserById).not.toHaveBeenCalled();
+    expect(db.updateUser).not.toHaveBeenCalled();
+  });
+
+  it('maps the hub answer to a role', () => {
+    expect(hubRoleFor({ platformAdmin: true, active: false }, SystemRoles.USER)).toBe(
+      SystemRoles.ADMIN,
+    );
+    expect(hubRoleFor({ platformAdmin: false, active: false }, SystemRoles.ADMIN)).toBe(
+      SystemRoles.ADMIN,
+    );
+    expect(hubRoleFor({ platformAdmin: false, active: true }, 'editor')).toBe('editor');
+    expect(hubRoleFor({}, SystemRoles.ADMIN)).toBe(SystemRoles.ADMIN);
   });
 });
 

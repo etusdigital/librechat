@@ -6,7 +6,9 @@ import {
   Archive,
   ChevronRight,
   CircleHelp,
+  ExternalLink,
   Keyboard,
+  LayoutGrid,
   LifeBuoy,
   LogOut,
   Scale,
@@ -47,7 +49,7 @@ function HelpSubmenu({
       >
         <CircleHelp className="icon-md" aria-hidden="true" />
         <span className="flex-1 text-left">{localize('com_nav_help')}</span>
-        <ChevronRight className="h-4 w-4 text-text-secondary" aria-hidden="true" />
+        <ChevronRight className="text-text-secondary h-4 w-4" aria-hidden="true" />
       </Menu.MenuItem>
       <Menu.Menu
         portal
@@ -99,6 +101,7 @@ function AccountSettings({ collapsed = false }: { collapsed?: boolean }) {
     enabled: !!isAuthenticated && startupConfig?.balance?.enabled,
   });
   const [showSettings, setShowSettings] = useState(false);
+  const etusHubUrl = (import.meta.env.VITE_ETUS_HUB_URL ?? '').replace(/\/+$/, '');
   const setShowShortcutsDialog = useSetRecoilState(store.showShortcutsDialog);
   const [showArchived, setShowArchived] = useState(false);
   const accountSettingsButtonRef = useRef<HTMLButtonElement>(null);
@@ -111,8 +114,8 @@ function AccountSettings({ collapsed = false }: { collapsed?: boolean }) {
         data-testid="nav-user"
         className={
           collapsed
-            ? 'flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-surface-active-alt aria-[expanded=true]:bg-surface-active-alt'
-            : 'mt-text-sm flex h-auto w-full items-center gap-2 rounded-xl p-2 text-sm transition-all duration-200 ease-in-out hover:bg-surface-active-alt aria-[expanded=true]:bg-surface-active-alt'
+            ? 'hover:bg-surface-active-alt aria-[expanded=true]:bg-surface-active-alt flex h-9 w-9 items-center justify-center rounded-lg transition-colors'
+            : 'mt-text-sm hover:bg-surface-active-alt aria-[expanded=true]:bg-surface-active-alt flex h-auto w-full items-center gap-2 rounded-xl p-2 text-sm transition-all duration-200 ease-in-out'
         }
       >
         <div
@@ -124,7 +127,7 @@ function AccountSettings({ collapsed = false }: { collapsed?: boolean }) {
         </div>
         {!collapsed && (
           <div
-            className="mt-2 grow overflow-hidden text-ellipsis whitespace-nowrap text-left text-text-primary"
+            className="text-text-primary mt-2 grow overflow-hidden text-left text-ellipsis whitespace-nowrap"
             style={{ marginTop: '0', marginLeft: '0' }}
           >
             {user?.name ?? user?.username ?? localize('com_nav_user')}
@@ -139,13 +142,13 @@ function AccountSettings({ collapsed = false }: { collapsed?: boolean }) {
           translate: collapsed ? '4px 0' : '0 -4px',
         }}
       >
-        <div className="text-token-text-secondary ml-3 mr-2 py-2 text-sm" role="note">
+        <div className="text-token-text-secondary mr-2 ml-3 py-2 text-sm" role="note">
           {user?.email ?? localize('com_nav_user')}
         </div>
         <DropdownMenuSeparator />
         {startupConfig?.balance?.enabled === true && balanceQuery.data != null && (
           <>
-            <div className="text-token-text-secondary ml-3 mr-2 py-2 text-sm" role="note">
+            <div className="text-token-text-secondary mr-2 ml-3 py-2 text-sm" role="note">
               {localize('com_nav_balance')}:{' '}
               {new Intl.NumberFormat().format(Math.round(balanceQuery.data.tokenCredits))}
             </div>
@@ -170,6 +173,26 @@ function AccountSettings({ collapsed = false }: { collapsed?: boolean }) {
           <GearIcon className="icon-md" aria-hidden="true" />
           {localize('com_nav_settings')}
         </Menu.MenuItem>
+        {/* Patch do fork (Etus): conta e aplicativos ficam no hub, como nos outros apps internos. */}
+        {etusHubUrl && (
+          <>
+            <DropdownMenuSeparator />
+            <Menu.MenuItem
+              onClick={() => openInNewTab(`${etusHubUrl}/profile`)}
+              className="select-item text-sm"
+            >
+              <ExternalLink className="icon-md" aria-hidden="true" />
+              {localize('com_etus_my_profile')}
+            </Menu.MenuItem>
+            <Menu.MenuItem
+              onClick={() => openInNewTab(`${etusHubUrl}/apps`)}
+              className="select-item text-sm"
+            >
+              <LayoutGrid className="icon-md" aria-hidden="true" />
+              {localize('com_etus_all_apps')}
+            </Menu.MenuItem>
+          </>
+        )}
         <DropdownMenuSeparator />
         <Menu.MenuItem onClick={() => logout()} className="select-item text-sm">
           <LogOut className="icon-md" aria-hidden="true" />

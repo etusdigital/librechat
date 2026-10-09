@@ -1,0 +1,93 @@
+/*
+ * Patch do fork (Etus): a identidade visual dos apps da nexus-stack, nas mesmas cores e fonte
+ * (tokens de artifacts/web/src/index.css). Carregado depois de style.css, só redefine variáveis,
+ * sem tocar em componente nenhum, para o fork continuar fácil de atualizar.
+ */
+
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('/fonts/SpaceGrotesk-Variable.woff2') format('woff2-variations');
+}
+
+:root {
+  --theme-font-family: 'Space Grotesk', Inter, ui-sans-serif, system-ui, sans-serif;
+
+  /* Paleta da marca, nos mesmos nomes que o LibreChat já usa para as escalas. */
+  --etus-ink: #151514;
+  --etus-paper: #fbfaf9;
+  --etus-green: #3be476;
+  --etus-green-deep: #066e3e;
+  --etus-green-soft: #e7ffdf;
+  --etus-green-bright: #8df768;
+}
+
+/* Claro */
+:root {
+  --presentation: var(--etus-paper);
+  --surface-primary: #ffffff;
+  --surface-primary-alt: #f3f2ef;
+  --surface-primary-contrast: var(--etus-paper);
+  --surface-secondary: #ebe9e5;
+  --surface-secondary-alt: #f3f2ef;
+  --surface-tertiary: #f3f2ef;
+  --surface-tertiary-alt: #ebe9e5;
+  --surface-hover: #ebe9e5;
+  --surface-hover-alt: #e3e1dd;
+  --surface-active: var(--etus-green-soft);
+  --surface-active-alt: var(--etus-green-soft);
+  --surface-submit: var(--etus-green-deep);
+  --surface-submit-hover: var(--etus-ink);
+  --surface-chat: var(--etus-paper);
+  --surface-dialog: #ffffff;
+  --header-primary: var(--etus-paper);
+  --header-hover: #ebe9e5;
+  --text-primary: var(--etus-ink);
+  --text-secondary: #6e6d68;
+  --text-secondary-alt: #8a8984;
+  --text-tertiary: #6e6d68;
+  --border-light: #d6d4d1;
+  --border-medium: #d6d4d1;
+  --border-medium-alt: #c9c7c3;
+  --border-heavy: #bebbb7;
+  --border-xheavy: #8a8984;
+  --ring-primary: var(--etus-green);
+  --accent-primary: var(--etus-green-deep);
+  --brand-purple: var(--etus-green-deep);
+}
+
+/* Escuro */
+.dark {
+  --presentation: var(--etus-ink);
+  --surface-primary: #1f1f1e;
+  --surface-primary-alt: var(--etus-ink);
+  --surface-primary-contrast: #1f1f1e;
+  --surface-secondary: #3e3e3c;
+  --surface-secondary-alt: #2a2a29;
+  --surface-tertiary: #3e3e3c;
+  --surface-tertiary-alt: #2a2a29;
+  --surface-hover: #3e3e3c;
+  --surface-hover-alt: #4a4a47;
+  --surface-active: var(--etus-green-deep);
+  --surface-active-alt: var(--etus-green-deep);
+  --surface-submit: var(--etus-green);
+  --surface-submit-hover: var(--etus-green-bright);
+  --surface-chat: var(--etus-ink);
+  --surface-dialog: #1f1f1e;
+  --header-primary: var(--etus-ink);
+  --header-hover: #3e3e3c;
+  --text-primary: var(--etus-paper);
+  --text-secondary: #bebbb7;
+  --text-secondary-alt: #a5a29e;
+  --text-tertiary: #bebbb7;
+  --border-light: #3e3e3c;
+  --border-medium: #3e3e3c;
+  --border-medium-alt: #4a4a47;
+  --border-heavy: #6e6d68;
+  --border-xheavy: #8a8984;
+  --ring-primary: var(--etus-green-bright);
+  --accent-primary: var(--etus-green);
+  --brand-purple: var(--etus-green);
+}

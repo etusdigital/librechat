@@ -56,6 +56,10 @@ RUN \
 
 COPY --chown=node:node . .
 
+# Patch do fork (Etus): o endereço do hub é lido pelo Vite na hora de montar o front.
+ARG VITE_ETUS_HUB_URL=
+ENV VITE_ETUS_HUB_URL=${VITE_ETUS_HUB_URL}
+
 RUN \
     # React client build with configurable memory
     NODE_OPTIONS="--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE}" npm run frontend && \

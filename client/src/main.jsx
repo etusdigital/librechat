@@ -5,6 +5,8 @@ import { initializeI18n } from './locales/i18n';
 import App from './App';
 import '@librechat/client/style.css';
 import './style.css';
+// Patch do fork (Etus): identidade visual da nexus-stack, por cima do tema padrão.
+import './etus.css';
 import './mobile.css';
 import { ApiErrorBoundaryProvider } from './hooks/ApiErrorBoundaryContext';
 import 'katex/dist/katex.min.css';

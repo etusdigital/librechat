@@ -151,11 +151,11 @@ export default defineConfig(({ command }) => ({
       },
       includeAssets: [],
       manifest: {
-        name: 'LibreChat',
-        short_name: 'LibreChat',
+        name: 'ETUS AI Chat',
+        short_name: 'ETUS AI',
         display: 'standalone',
-        background_color: '#000000',
-        theme_color: '#009688',
+        background_color: '#151514',
+        theme_color: '#151514',
         icons: [
           {
             src: 'assets/favicon-32x32.png',

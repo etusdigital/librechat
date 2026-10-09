@@ -1,0 +1,51 @@
+name: Imagem Etus
+
+# Monta a imagem do nosso fork e publica no GHCR da etusdigital. Os workflows do upstream disparam
+# na branch main, que não usamos: o fork vive na branch etus.
+on:
+  push:
+    branches: [etus]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: etus-image-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Versão
+        id: version
+        run: echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          # O endereço do hub entra no build: o Vite lê VITE_* na hora de montar o front.
+          build-args: |
+            VITE_ETUS_HUB_URL=https://apps.etus.io
+            BUILD_COMMIT=${{ github.sha }}
+            BUILD_BRANCH=${{ github.ref_name }}
+          tags: |
+            ghcr.io/etusdigital/librechat:${{ steps.version.outputs.sha }}
+            ghcr.io/etusdigital/librechat:etus
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

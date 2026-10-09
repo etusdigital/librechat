@@ -16,6 +16,7 @@ import { useGetStartupConfig } from '~/data-provider';
 import ExportAndShareMenu from './ExportAndShareMenu';
 import SubagentThreadLink from './SubagentThreadLink';
 import BookmarkMenu from './Menus/BookmarkMenu';
+import EtusHubButton from './EtusHubButton';
 import AddMultiConvo from './AddMultiConvo';
 import { useHasAccess } from '~/hooks';
 import { cn } from '~/utils';
@@ -81,7 +82,7 @@ function Header({
   return (
     /* The composer review is in a z-10 stacking context. Keep header controls
        above it when a tall review reaches the top of a short viewport. */
-    <div className="absolute top-0 z-20 flex h-[52px] w-full items-center gap-2 bg-gradient-to-b from-presentation via-presentation/70 to-transparent p-2 font-semibold text-text-primary md:from-presentation/80 md:via-presentation/50 2xl:from-presentation/0 2xl:via-transparent">
+    <div className="from-presentation via-presentation/70 text-text-primary md:from-presentation/80 md:via-presentation/50 2xl:from-presentation/0 absolute top-0 z-20 flex h-[52px] w-full items-center gap-2 bg-gradient-to-b to-transparent p-2 font-semibold 2xl:via-transparent">
       <div className="flex flex-shrink-0 items-center md:hidden">
         <OpenSidebar testId="header-open-sidebar-button" />
       </div>
@@ -123,6 +124,8 @@ function Header({
         )}
         <HeaderMenu startupConfig={startupConfig} trace={trace} className="md:hidden" />
         <div className="hidden items-center gap-2 md:flex">
+          {/* Patch do fork (Etus): atalho para o lançador do hub. */}
+          <EtusHubButton />
           {trace.show && <TraceButton onClick={trace.open} />}
           <ExportAndShareMenu isSharedButtonEnabled={startupConfig?.sharedLinksEnabled ?? false} />
           {hasAccessToTemporaryChat === true && <TemporaryChat />}

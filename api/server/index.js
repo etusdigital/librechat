@@ -81,6 +81,7 @@ const { startExpiredFileSweep } = require('./services/Files/process');
 const { checkMigrations } = require('./services/start/migration');
 const optionalJwtAuth = require('./middleware/optionalJwtAuth');
 const initializeMCPs = require('./services/initializeMCPs');
+const { startEtusHubSync } = require('./services/Etus');
 const { configureSubagentTaskRouting } = require('./services/Endpoints/agents/subagentThreadStore');
 const configureSocialLogins = require('./socialLogins');
 const createSpaFallback = require('./utils/fallback');
@@ -524,6 +525,7 @@ const startServer = async () => {
       }
       serverReady = true;
       logger.info('Server readiness checks passing.');
+      startEtusHubSync();
     } catch (initErr) {
       serverReady = false;
       logger.error('Post-listen initialization failed:', initErr);

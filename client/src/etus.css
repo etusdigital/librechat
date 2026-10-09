@@ -33,7 +33,7 @@ html,
 :root {
   --presentation: var(--etus-paper);
   --surface-primary: 255 255 255;
-  --surface-primary-alt: 243 242 239;
+  --surface-primary-alt: 255 255 255;
   --surface-primary-contrast: var(--etus-paper);
   --surface-secondary: 235 233 229;
   --surface-secondary-alt: 243 242 239;
@@ -67,7 +67,7 @@ html,
 .dark {
   --presentation: var(--etus-ink);
   --surface-primary: 31 31 30;
-  --surface-primary-alt: var(--etus-ink);
+  --surface-primary-alt: 31 31 30;
   --surface-primary-contrast: 31 31 30;
   --surface-secondary: 62 62 60;
   --surface-secondary-alt: 42 42 41;
@@ -95,4 +95,10 @@ html,
   --ring-primary: var(--etus-green-bright);
   --accent-primary: var(--etus-green);
   --brand-purple: var(--etus-green);
+}
+
+/* The sidebar resize handle keeps a text-colored focus ring after a drag; a border tone reads as part of the layout. */
+[role="separator"]:focus-visible,
+.cursor-col-resize:focus-visible {
+  --tw-ring-color: rgb(var(--border-heavy));
 }

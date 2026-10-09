@@ -24,6 +24,11 @@
   --etus-green-bright: #8df768;
 }
 
+html,
+.font-sans {
+  font-family: var(--theme-font-family);
+}
+
 /* Claro */
 :root {
   --presentation: var(--etus-paper);

@@ -1,7 +1,9 @@
 const { logger } = require('@librechat/data-schemas');
+const { SystemRoles } = require('librechat-data-provider');
 const { fetchUserSettings, isHubEnabled } = require('./hubClient');
 const { readUserSettings, writeUserSettings } = require('./settingsCache');
 const { memberKeyOf, syncHubGroups } = require('./groups');
+const db = require('~/models');
 
 const SETTING_KEYS = ['model', 'temperature', 'systemPrompt', 'prompts', 'agents', 'mcpServers'];
 
@@ -21,6 +23,38 @@ function sanitizeValues(values) {
   return result;
 }
 
+function hubRoleFor(answer, currentRole) {
+  if (answer.platformAdmin === true) {
+    return SystemRoles.ADMIN;
+  }
+  if (
+    answer.platformAdmin === false &&
+    answer.active === true &&
+    currentRole === SystemRoles.ADMIN
+  ) {
+    return SystemRoles.USER;
+  }
+  return currentRole;
+}
+
+async function syncHubRole(userId, answer) {
+  if (typeof answer.platformAdmin !== 'boolean') {
+    return;
+  }
+  const user = await db.getUserById(userId, 'role');
+  if (!user) {
+    return;
+  }
+  const role = hubRoleFor(answer, user.role);
+  if (role === user.role) {
+    return;
+  }
+  await db.updateUser(userId, { role });
+  logger.info(
+    `[EtusHub] User ${userId} role changed from ${user.role ?? 'none'} to ${role} (platformAdmin: ${answer.platformAdmin})`,
+  );
+}
+
 async function applyHubAnswer({ userId, memberKey, authUserId, answer, background }) {
   const active = answer.active === true;
   const groups = active ? answer.groups : [];
@@ -37,6 +71,7 @@ async function applyHubAnswer({ userId, memberKey, authUserId, answer, backgroun
     },
     { background },
   );
+  await syncHubRole(userId, answer);
 }
 
 async function refreshHubAccess({ userId, memberKey, authUserId, background = false }) {
@@ -75,6 +110,7 @@ async function getCachedHubValues(userId) {
 
 module.exports = {
   sanitizeValues,
+  hubRoleFor,
   refreshHubAccess,
   syncHubAccess,
   getCachedHubValues,

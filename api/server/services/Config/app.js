@@ -11,6 +11,7 @@ const {
 } = require('@librechat/api');
 const { setCachedTools, invalidateCachedTools } = require('./getCachedTools');
 const { loadAndFormatTools } = require('~/server/services/start/tools');
+const { applyHubDefaults } = require('~/server/services/Etus/defaults');
 const loadCustomConfig = require('./loadCustomConfig');
 const getLogStores = require('~/cache/getLogStores');
 const paths = require('~/config/paths');
@@ -52,9 +53,9 @@ const { getAppConfig, clearAppConfigCache, clearOverrideCache } = createAppConfi
   cacheKeys: CacheKeys,
   getApplicableConfigs: db.getApplicableConfigs,
   getUserPrincipals: db.getUserPrincipals,
-  augmentConfig: ({ appConfig, baseConfig, principals, options }) => {
+  augmentConfig: async ({ appConfig, baseConfig, principals, options }) => {
     if (!options.userId) return appConfig;
-    return mergeAccessibleCodeEnvironments({
+    const augmented = await mergeAccessibleCodeEnvironments({
       appConfig,
       deploymentConfig: baseConfig,
       actor: {
@@ -65,6 +66,7 @@ const { getAppConfig, clearAppConfigCache, clearOverrideCache } = createAppConfi
       },
       registry: getCodeEnvironmentRegistry(),
     });
+    return applyHubDefaults({ appConfig: augmented, baseConfig, userId: options.userId });
   },
 });
 

@@ -296,6 +296,10 @@ function getFullName(userinfo) {
     return userinfo.family_name;
   }
 
+  if (userinfo.name) {
+    return userinfo.name;
+  }
+
   return userinfo.username || userinfo.email;
 }
 

@@ -725,3 +725,30 @@ describe('initializeCustom – native Anthropic provider', () => {
     expect(options.provider).toBeUndefined();
   });
 });
+
+describe('initializeCustom – empty stream chunks', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('wraps the fetch of OpenAI-compatible endpoints and keeps the one from the config', async () => {
+    const configFetch = jest.fn(async () => Response.json({ ok: true }));
+    mockGetOpenAIConfig.mockReturnValueOnce({
+      llmConfig: { model: 'test-model' },
+      configOptions: { baseURL: 'https://gateway.example.com/v1', fetch: configFetch },
+    });
+    const params = createParams({ apiKey: 'sk-system-key' });
+
+    const options = await initializeCustom(params);
+    const fetch = options.configOptions?.fetch as (url: string) => Promise<Response>;
+    const response = await fetch('https://gateway.example.com/v1/chat/completions');
+
+    expect(options.configOptions?.baseURL).toBe('https://gateway.example.com/v1');
+    expect(fetch).not.toBe(configFetch);
+    expect(configFetch).toHaveBeenCalledWith(
+      'https://gateway.example.com/v1/chat/completions',
+      undefined,
+    );
+    expect(await response.json()).toEqual({ ok: true });
+  });
+});

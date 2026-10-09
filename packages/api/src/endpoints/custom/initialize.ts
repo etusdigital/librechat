@@ -8,6 +8,7 @@ import {
 } from 'librechat-data-provider';
 import type { TEndpoint } from 'librechat-data-provider';
 import type { AppConfig } from '@librechat/data-schemas';
+import type { Fetch } from '~/endpoints/openai/emptyChunks';
 import type {
   InitializeResultBase,
   EndpointTokenConfig,
@@ -15,6 +16,7 @@ import type {
   ProviderInitializeParams,
 } from '~/types';
 import { getLLMConfig as getAnthropicLLMConfig } from '~/endpoints/anthropic/llm';
+import { withoutEmptyStreamChunks } from '~/endpoints/openai/emptyChunks';
 import { resolveModelTransportTimeouts } from '~/agents/config';
 import { extractDefaultParams } from '~/endpoints/openai/llm';
 import { isUserProvided, checkUserKeyExpiry } from '~/utils';
@@ -340,6 +342,10 @@ export async function initializeCustom(
     };
     options = getOpenAIConfig(apiKey, finalClientOptions, endpoint);
     if (options != null) {
+      options.configOptions = {
+        ...options.configOptions,
+        fetch: withoutEmptyStreamChunks(options.configOptions?.fetch as Fetch | undefined),
+      } as typeof options.configOptions;
       options.useLegacyContent = true;
       options.endpointTokenConfig = endpointTokenConfig;
     }

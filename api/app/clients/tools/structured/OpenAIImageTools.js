@@ -10,6 +10,7 @@ const {
   oaiToolkit,
   extractBaseURL,
   getProxyDispatcher,
+  resolveHeaders,
   applyAxiosProxyConfig,
 } = require('@librechat/api');
 const { getStrategyFunctions } = require('~/server/services/Files/strategies');
@@ -46,6 +47,34 @@ function createAbortHandler() {
   return function () {
     logger.debug('[ImageGenOAI] Image generation aborted');
   };
+}
+
+/**
+ * Extra headers for the image API, from `IMAGE_GEN_OAI_HEADERS` (a JSON object). Values may use the
+ * same placeholders as custom endpoint headers, e.g. `{{LIBRECHAT_OPENID_ID_TOKEN}}`, so a gateway
+ * can tell which signed-in person the request is for.
+ * @returns {Record<string, string> | null}
+ */
+function getConfiguredHeaders() {
+  const raw = process.env.IMAGE_GEN_OAI_HEADERS;
+  if (!raw) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    const isStringMap =
+      parsed &&
+      typeof parsed === 'object' &&
+      !Array.isArray(parsed) &&
+      Object.values(parsed).every((value) => typeof value === 'string');
+    if (isStringMap) {
+      return parsed;
+    }
+  } catch {
+    /* reported below */
+  }
+  logger.warn('[ImageGenOAI] IMAGE_GEN_OAI_HEADERS must be a JSON object of strings; ignoring it');
+  return null;
 }
 
 /**
@@ -108,6 +137,12 @@ function createOpenAIImageTools(fields = {}) {
 
   const imageFiles = fields.imageFiles ?? [];
 
+  const configuredHeaders = override ? null : getConfiguredHeaders();
+  const requestHeaders = () =>
+    configuredHeaders
+      ? resolveHeaders({ headers: configuredHeaders, user: req?.user, stripUnresolved: true })
+      : {};
+
   /**
    * Image Generation Tool
    */
@@ -127,6 +162,9 @@ function createOpenAIImageTools(fields = {}) {
         throw new Error('Missing required field: prompt');
       }
       const clientConfig = { ...closureConfig };
+      if (configuredHeaders) {
+        clientConfig.defaultHeaders = { ...closureConfig.defaultHeaders, ...requestHeaders() };
+      }
       const proxyDispatcher = getProxyDispatcher();
       if (proxyDispatcher) {
         clientConfig.fetchOptions = {
@@ -325,6 +363,7 @@ Error Message: ${error.message}`);
       /** @type {import('axios').RawAxiosHeaders} */
       let headers = {
         ...formData.getHeaders(),
+        ...requestHeaders(),
       };
 
       if (process.env.IMAGE_GEN_OAI_AZURE_API_VERSION && process.env.IMAGE_GEN_OAI_BASEURL) {

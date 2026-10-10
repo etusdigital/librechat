@@ -1,10 +1,10 @@
 import { useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Button } from '@librechat/client';
+import { Button, EmptyState } from '@librechat/client';
 import { Building2, FolderPlus, Users, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { DesignProject, DesignSystemSummary, ProjectScope } from '../api/types';
-import { DesignCardsSkeleton, DesignEmptyState, DesignErrorState } from '../common/DesignStates';
+import { DesignCardsSkeleton, DesignErrorState } from '../common/DesignStates';
 import { designErrorCode, designErrorMessageKey } from '../api/errors';
 import { PROJECT_KIND_KEYS, formatDesignDate } from '../common/format';
 import { useDesignLocalize, type DesignTranslationKey } from '../i18n';
@@ -60,16 +60,19 @@ export function ProjectCard({
     <li className="min-w-0">
       <Link
         to={designProjectPath(project.projectId)}
-        className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border-light bg-surface-secondary transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
+        className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border-light bg-surface-secondary no-underline transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
       >
         <ProjectThumbnail project={project} system={system} />
         <span className="flex min-w-0 flex-1 flex-col gap-1 border-t border-border-light p-4">
           <span className="truncate text-base font-semibold tracking-tight text-text-primary">
             {project.name}
           </span>
-          <span className="truncate text-sm text-text-secondary">
-            {updated ? `${kind} · ${localize('project_updated_at', { date: updated })}` : kind}
-          </span>
+          <span className="truncate text-sm text-text-secondary">{kind}</span>
+          {updated ? (
+            <span className="truncate text-xs tabular-nums text-text-secondary">
+              {localize('project_updated_at', { date: updated })}
+            </span>
+          ) : null}
           {showOwner ? (
             <span className="truncate text-xs text-text-secondary">
               {localize('home_project_owner', { name: project.owner.name })}
@@ -117,7 +120,11 @@ export default function ProjectGrid({
     const empty = EMPTY[scope];
     return (
       <div className="flex flex-col gap-6">
-        <DesignEmptyState icon={empty.icon} message={localize(empty.key)} />
+        <EmptyState
+          icon={empty.icon}
+          description={localize(empty.key)}
+          className="rounded-2xl bg-surface-secondary px-6 py-10"
+        />
         {emptyAction}
       </div>
     );

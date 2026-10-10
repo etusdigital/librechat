@@ -170,7 +170,8 @@ describe('Design home grid', () => {
     renderAt();
     const card = await screen.findByRole('link', { name: /Landing Produto X/ });
     expect(card).toHaveAttribute('href', '/design/prj_abc');
-    expect(within(card).getByText(/Prototype · Updated/)).toBeVisible();
+    expect(within(card).getByText('Prototype')).toBeVisible();
+    expect(within(card).getByText(/^Updated /)).toBeVisible();
     expect(await within(card).findByText('Airbnb')).toBeVisible();
     const frame = await waitFor(() => {
       const found = card.querySelector('iframe');

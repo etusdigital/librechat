@@ -80,7 +80,7 @@ function HomeContent({ me }: { me: DesignMe }) {
         <h2 className="sr-only">{localize('home_projects_heading')}</h2>
         <Link
           to={DESIGN_SYSTEMS_PATH}
-          className="inline-flex min-h-10 items-center gap-3 rounded-xl border border-border-light bg-surface-secondary px-3 py-2 text-sm text-text-primary transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
+          className="inline-flex min-h-10 items-center gap-3 rounded-xl border border-border-light bg-surface-secondary px-3 py-2 text-sm text-text-primary no-underline transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
         >
           <Palette className="size-4 shrink-0" aria-hidden="true" />
           <span className="flex flex-col">

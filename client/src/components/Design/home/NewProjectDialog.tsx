@@ -90,7 +90,7 @@ function KindStep({
             <label
               key={kind}
               className={cn(
-                'flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors focus-within:ring-2 focus-within:ring-text-primary',
+                'relative flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors focus-within:ring-2 focus-within:ring-text-primary',
                 checked
                   ? 'border-border-xheavy bg-surface-active'
                   : 'border-border-light bg-surface-secondary hover:bg-surface-hover',

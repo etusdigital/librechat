@@ -183,7 +183,7 @@ export default function DesignSystemPicker({
         </span>
         <Link
           to={DESIGN_SYSTEMS_PATH}
-          className="inline-flex items-center gap-1 text-sm text-text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
+          className="inline-flex items-center gap-1 text-sm text-text-primary no-underline underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
         >
           {localize('home_systems_gallery_link')}
           <ArrowRight className="size-3.5" aria-hidden="true" />

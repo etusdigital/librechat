@@ -48,9 +48,11 @@ export default function FrameThumbnail({
         className ?? '',
       )}
     >
-      <div aria-hidden="true" className="absolute inset-0">
-        {fallback}
-      </div>
+      {loaded ? null : (
+        <div aria-hidden="true" className="absolute inset-0">
+          {fallback}
+        </div>
+      )}
       {src ? (
         <iframe
           src={src}

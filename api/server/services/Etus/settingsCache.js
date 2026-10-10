@@ -6,6 +6,7 @@ const ENTRY_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const SEEN_WINDOW_MS = 24 * 60 * 60 * 1000;
 const MODELS_TTL_MS = 12 * 60 * 60 * 1000;
 const modelsKey = (userId) => `models:${userId}`;
+const skillsKey = (userId) => `skills:${userId}`;
 
 let store;
 const seenUsers = new Map();
@@ -78,6 +79,24 @@ async function writeUserModels(userId, entry) {
   }
 }
 
+async function readHubSkills(userId) {
+  try {
+    const ids = await getStore().get(skillsKey(userId));
+    return Array.isArray(ids) ? ids : [];
+  } catch (error) {
+    logger.warn(`[EtusHub] Skill activation cache read failed: ${error?.message ?? error}`);
+    return null;
+  }
+}
+
+async function writeHubSkills(userId, ids) {
+  try {
+    await getStore().set(skillsKey(userId), ids);
+  } catch (error) {
+    logger.warn(`[EtusHub] Skill activation cache write failed: ${error?.message ?? error}`);
+  }
+}
+
 function recentlySeenUsers(now = Date.now()) {
   const users = [];
   for (const [userId, seen] of seenUsers) {
@@ -100,6 +119,8 @@ module.exports = {
   writeUserSettings,
   readUserModels,
   writeUserModels,
+  readHubSkills,
+  writeHubSkills,
   recentlySeenUsers,
   resetSettingsCache,
 };

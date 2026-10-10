@@ -75,13 +75,15 @@ describe('syncHubShares', () => {
     prompt: new mongoose.Types.ObjectId(),
     oldPrompt: new mongoose.Types.ObjectId(),
     agent: new mongoose.Types.ObjectId(),
+    skill: new mongoose.Types.ObjectId(),
+    oldSkill: new mongoose.Types.ObjectId(),
   };
   const lean = (value) => ({ lean: async () => value });
   const saved = {};
   let aclEntries;
 
   beforeAll(() => {
-    for (const name of ['Group', 'AclEntry', 'PromptGroup', 'Agent', 'MCPServer']) {
+    for (const name of ['Group', 'AclEntry', 'PromptGroup', 'Agent', 'MCPServer', 'Skill']) {
       saved[name] = mongoose.models[name];
     }
   });
@@ -114,6 +116,7 @@ describe('syncHubShares', () => {
     mongoose.models.PromptGroup = { find: jest.fn(() => lean([{ _id: ids.prompt }])) };
     mongoose.models.Agent = { find: jest.fn(() => lean([{ _id: ids.agent, id: 'agent_1' }])) };
     mongoose.models.MCPServer = { find: jest.fn(() => lean([])) };
+    mongoose.models.Skill = { find: jest.fn(() => lean([{ _id: ids.skill }])) };
     db.upsertGroupByExternalId.mockResolvedValue({ _id: ids.group });
     fetchAccessVersion.mockResolvedValue({ version: 5 });
     fetchOrganizationSettings.mockResolvedValue({
@@ -152,6 +155,68 @@ describe('syncHubShares', () => {
     );
     expect(db.deleteAclEntries).toHaveBeenCalledWith({ _id: { $in: ['owned-old'] } });
     expect(db.invalidatePromptGroupAccessContext).toHaveBeenCalled();
+  });
+
+  it('shares hub skills with the group as skill viewer', async () => {
+    fetchOrganizationSettings.mockResolvedValue({
+      version: 5,
+      organization: { id: 'org1', name: 'Etus' },
+      entries: [
+        {
+          groupId: 'hub:team:t1',
+          subject: { kind: 'team', id: 't1', name: 'Design' },
+          values: { skills: [ids.skill.toString(), 'not-an-id'] },
+        },
+      ],
+    });
+
+    const result = await syncHubShares();
+
+    expect(result.grants).toBe(1);
+    expect(mongoose.models.Skill.find).toHaveBeenCalledWith(
+      { _id: { $in: [ids.skill.toString()] } },
+      expect.anything(),
+    );
+    expect(grantPermission).toHaveBeenCalledWith(
+      expect.objectContaining({
+        principalType: 'group',
+        principalId: ids.group.toString(),
+        resourceType: 'skill',
+        resourceId: ids.skill.toString(),
+        accessRoleId: 'skill_viewer',
+        grantedBy: SYNC_MARKER,
+      }),
+    );
+  });
+
+  it('revokes a skill share the sync created once the hub drops it', async () => {
+    aclEntries = [
+      {
+        _id: 'owned-skill',
+        principalId: ids.group,
+        resourceType: 'skill',
+        resourceId: ids.oldSkill,
+        grantedBy: SYNC_MARKER,
+      },
+    ];
+    mongoose.models.Skill.find.mockReturnValue(lean([]));
+    fetchOrganizationSettings.mockResolvedValue({
+      version: 6,
+      organization: { id: 'org1', name: 'Etus' },
+      entries: [
+        {
+          groupId: 'hub:team:t1',
+          subject: { kind: 'team', id: 't1', name: 'Design' },
+          values: { skills: [] },
+        },
+      ],
+    });
+
+    const result = await syncHubShares();
+
+    expect(result).toEqual({ grants: 0, revokes: 1 });
+    expect(db.deleteAclEntries).toHaveBeenCalledWith({ _id: { $in: ['owned-skill'] } });
+    expect(db.invalidatePromptGroupAccessContext).not.toHaveBeenCalled();
   });
 
   it('skips the pass when no company version moved', async () => {

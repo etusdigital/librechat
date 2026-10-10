@@ -14,6 +14,7 @@ jest.mock('../groups', () => ({
   syncHubGroups: jest.fn(),
 }));
 jest.mock('../routerModels', () => ({ syncRouterModels: jest.fn(async () => true) }));
+jest.mock('../skillActivation', () => ({ syncHubSkills: jest.fn() }));
 jest.mock('~/models', () => ({
   getUserById: jest.fn(),
   updateUser: jest.fn(),
@@ -24,6 +25,7 @@ const { fetchUserSettings, isHubEnabled } = require('../hubClient');
 const { writeUserSettings } = require('../settingsCache');
 const { syncHubGroups } = require('../groups');
 const { syncRouterModels } = require('../routerModels');
+const { syncHubSkills } = require('../skillActivation');
 const db = require('~/models');
 const { SystemRoles } = require('librechat-data-provider');
 const { syncHubAccess, sanitizeValues, hubRoleFor } = require('../access');
@@ -62,6 +64,21 @@ describe('syncHubAccess', () => {
     );
   });
 
+  it('activates the hub skills with the sanitized values', async () => {
+    fetchUserSettings.mockResolvedValue({
+      version: 2,
+      active: true,
+      groups: [],
+      values: { skills: ['64c000000000000000000001', 7], agents: ['agent_etus_design'] },
+    });
+
+    await syncHubAccess(user);
+    expect(syncHubSkills).toHaveBeenCalledWith('user-1', {
+      skills: ['64c000000000000000000001'],
+      agents: ['agent_etus_design'],
+    });
+  });
+
   it('clears groups and values for an inactive person', async () => {
     fetchUserSettings.mockResolvedValue({
       version: 1,
@@ -72,6 +89,7 @@ describe('syncHubAccess', () => {
     await syncHubAccess(user);
     expect(syncHubGroups).toHaveBeenCalledWith(expect.anything(), []);
     expect(writeUserSettings.mock.calls[0][1].values).toEqual({});
+    expect(syncHubSkills).toHaveBeenCalledWith('user-1', {});
   });
 
   it('keeps the last known state when the hub is down', async () => {
@@ -79,6 +97,7 @@ describe('syncHubAccess', () => {
     expect(await syncHubAccess(user)).toBe(false);
     expect(syncHubGroups).not.toHaveBeenCalled();
     expect(writeUserSettings).not.toHaveBeenCalled();
+    expect(syncHubSkills).not.toHaveBeenCalled();
     expect(logger.warn).toHaveBeenCalled();
   });
 
@@ -181,9 +200,16 @@ describe('sanitizeValues', () => {
         systemPrompt: 'oi',
         mcpServers: ['a'],
         agents: 'x',
+        skills: ['s1', null],
         other: 1,
       }),
-    ).toEqual({ temperature: 0.5, systemPrompt: 'oi', mcpServers: ['a'], agents: 'x' });
+    ).toEqual({
+      temperature: 0.5,
+      systemPrompt: 'oi',
+      mcpServers: ['a'],
+      agents: 'x',
+      skills: ['s1'],
+    });
     expect(sanitizeValues({ temperature: Number.NaN })).toEqual({});
     expect(sanitizeValues(null)).toEqual({});
   });

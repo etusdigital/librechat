@@ -33,6 +33,7 @@ describe('buildCatalog', () => {
       ['prompts', 'multi'],
       ['agents', 'multi'],
       ['mcpServers', 'multi'],
+      ['skills', 'multi'],
     ]);
     expect(fieldOf(catalog, 'temperature')).toMatchObject({ min: 0, max: 2 });
     expect(fieldOf(catalog, 'systemPrompt').maxLength).toBe(8000);
@@ -72,6 +73,43 @@ describe('buildCatalog', () => {
     const options = fieldOf(many, 'prompts').options;
     expect(options).toHaveLength(2000);
     expect(options[0].label).toHaveLength(200);
+  });
+});
+
+describe('skills field', () => {
+  const skillAt = (index, extra = {}) => ({
+    _id: { toString: () => `64c${String(index).padStart(21, '0')}` },
+    name: `skill-${String(index).padStart(3, '0')}`,
+    ...extra,
+  });
+
+  it('lists every skill when there are more than 100', () => {
+    const skills = Array.from({ length: 150 }, (_, index) => skillAt(index));
+    const options = fieldOf(buildCatalog({ skills }), 'skills').options;
+    expect(options).toHaveLength(150);
+    expect(new Set(options.map((option) => option.id)).size).toBe(150);
+    expect(options[0]).toEqual({ id: '64c000000000000000000000', label: 'skill-000' });
+  });
+
+  it('prefers the display title and clips the description to 280 characters', () => {
+    const options = fieldOf(
+      buildCatalog({
+        skills: [
+          skillAt(1, { displayTitle: 'Landing SaaS', description: `  ${'d'.repeat(400)}  ` }),
+          skillAt(2, { description: '   ' }),
+        ],
+      }),
+      'skills',
+    ).options;
+    expect(options).toEqual([
+      { id: '64c000000000000000000001', label: 'Landing SaaS', description: 'd'.repeat(280) },
+      { id: '64c000000000000000000002', label: 'skill-002' },
+    ]);
+  });
+
+  it('caps the skill options at the hub limit', () => {
+    const skills = Array.from({ length: 2100 }, (_, index) => skillAt(index));
+    expect(fieldOf(buildCatalog({ skills }), 'skills').options).toHaveLength(2000);
   });
 });
 

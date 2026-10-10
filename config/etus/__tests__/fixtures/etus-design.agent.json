@@ -1,0 +1,20 @@
+{
+  "key": "etus-design",
+  "id": "agent_etus_design",
+  "name": "Etus Design",
+  "description": "Cria landing pages, protótipos, decks, dashboards, posts, e-mails e imagens seguindo a marca Etus.",
+  "instructions": "You are a senior product designer and front-end engineer. Always reply in Brazilian Portuguese.",
+  "provider": "ETUS AI",
+  "model": "cc/claude-sonnet-5",
+  "model_parameters": { "temperature": 0.4 },
+  "artifacts": "default",
+  "tools": ["image_gen_oai", "ask_user_question"],
+  "skills_enabled": true,
+  "skills_scope": "selected",
+  "skillNames": ["etus-design-systems", "etus-design-craft", "tpl-saas-landing"],
+  "conversation_starters": [
+    "Crie uma landing page para o lançamento de um produto da Etus",
+    "Monte um deck de 8 slides com os resultados do trimestre"
+  ],
+  "sourceCommit": "0000000000000000000000000000000000000000"
+}

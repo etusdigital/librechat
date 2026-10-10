@@ -7,6 +7,13 @@ jest.mock('../../connect', () => jest.fn().mockResolvedValue(true));
 const fixture = require('./fixtures/etus-design.agent.json');
 const AGENT_ID = fixture.id;
 const SKILL_NAMES = fixture.skillNames;
+const NATIVE_TOOLS = [
+  'execute_code',
+  'web_search',
+  'file_search',
+  'image_gen_oai',
+  'ask_user_question',
+];
 const DESIGN_TOOLS = [
   'ask_user_question',
   'design__get_context_mcp_etus',
@@ -28,6 +35,9 @@ const DESIGN_TOOLS = [
   'design__export_project_mcp_etus',
   'design__get_job_mcp_etus',
 ];
+const V2_TOOLS = [...NATIVE_TOOLS, ...DESIGN_TOOLS.slice(1), 'design__web_search_mcp_etus'];
+const SCREEN_TOOLS = DESIGN_TOOLS.filter((tool) => tool !== 'design__get_job_mcp_etus');
+const OTHER_SERVER_TOOL = 'search_code_mcp_github';
 
 describe('seed-design-agent', () => {
   let env;
@@ -152,7 +162,7 @@ describe('seed-design-agent', () => {
     expect(second.action).toBe('unchanged');
   });
 
-  it('moves the v1 agent to the v2 tools and back', async () => {
+  it('moves the v1 agent to the v2 tools, and back only with --prune-tools', async () => {
     await seedDesignAgent({ definition: definition(), author });
 
     const toV2 = await seedDesignAgent({ definition: definition({ tools: DESIGN_TOOLS }), author });
@@ -160,11 +170,132 @@ describe('seed-design-agent', () => {
     expect(toV2.changes.map((change) => change.field)).toEqual(['tools', 'mcpServerNames']);
     expect(toV2.changes[1]).toEqual({ field: 'mcpServerNames', before: [], after: ['etus'] });
 
-    const toV1 = await seedDesignAgent({ definition: definition(), author });
+    const kept = await seedDesignAgent({ definition: definition(), author });
+    expect(kept.action).toBe('unchanged');
+    expect(kept.prunedTools).toEqual([]);
+    expect(kept.warnings.join(' ')).toContain('--prune-tools');
+
+    const toV1 = await seedDesignAgent({ definition: definition(), author, pruneTools: true });
     expect(toV1.changes.map((change) => change.field)).toEqual(['tools', 'mcpServerNames']);
+    expect(toV1.prunedTools).toEqual(DESIGN_TOOLS.slice(1));
     const agent = await models.Agent.findOne({ id: AGENT_ID }).lean();
     expect(agent.tools).toEqual(['image_gen_oai', 'ask_user_question']);
     expect(agent.mcpServerNames).toEqual([]);
+  });
+
+  describe('tools turned on in the agent screen', () => {
+    const editInScreen = async (update) => {
+      const { updateAgent } = require('~/models');
+      await updateAgent({ id: AGENT_ID }, update, { updatingUserId: author._id.toString() });
+    };
+
+    beforeEach(async () => {
+      await seedDesignAgent({ definition: definition({ tools: SCREEN_TOOLS }), author });
+      await editInScreen({
+        tools: [...SCREEN_TOOLS, 'execute_code', 'calculator', OTHER_SERVER_TOOL],
+        mcpServerNames: ['etus', 'github'],
+        tool_resources: { execute_code: { file_ids: ['file_1'] } },
+        recursion_limit: 40,
+        end_after_tools: true,
+      });
+    });
+
+    it('adds the definition tools to the saved ones without removing any', async () => {
+      const result = await seedDesignAgent({ definition: definition({ tools: V2_TOOLS }), author });
+
+      expect(result.action).toBe('update');
+      expect(result.changes.map((change) => change.field)).toEqual(['tools']);
+      expect(result.prunedTools).toEqual([]);
+      expect(result.warnings.join(' ')).toContain(`calculator, ${OTHER_SERVER_TOOL}`);
+      const agent = await models.Agent.findOne({ id: AGENT_ID }).lean();
+      expect(agent.tools).toEqual([
+        ...SCREEN_TOOLS,
+        'execute_code',
+        'calculator',
+        OTHER_SERVER_TOOL,
+        'web_search',
+        'file_search',
+        'image_gen_oai',
+        'design__get_job_mcp_etus',
+        'design__web_search_mcp_etus',
+      ]);
+      expect(agent.mcpServerNames).toEqual(['etus', 'github']);
+    });
+
+    it('keeps the fields it does not manage and restores the ones it does', async () => {
+      await editInScreen({ name: 'Meu Design' });
+
+      const result = await seedDesignAgent({ definition: definition({ tools: V2_TOOLS }), author });
+
+      expect(result.changes.map((change) => change.field)).toEqual(['name', 'tools']);
+      const agent = await models.Agent.findOne({ id: AGENT_ID }).lean();
+      expect(agent.name).toBe('Etus Design');
+      expect(agent.recursion_limit).toBe(40);
+      expect(agent.end_after_tools).toBe(true);
+      expect(agent.tool_resources).toEqual({ execute_code: { file_ids: ['file_1'] } });
+    });
+
+    it('is idempotent once the definition tools are in', async () => {
+      await seedDesignAgent({ definition: definition({ tools: V2_TOOLS }), author });
+      const before = await models.Agent.findOne({ id: AGENT_ID }).lean();
+
+      const again = await seedDesignAgent({ definition: definition({ tools: V2_TOOLS }), author });
+
+      expect(again.action).toBe('unchanged');
+      expect(again.changes).toEqual([]);
+      const after = await models.Agent.findOne({ id: AGENT_ID }).lean();
+      expect(after.tools).toEqual(before.tools);
+      expect(after.versions).toHaveLength(before.versions.length);
+      expect(after.updatedAt.getTime()).toBe(before.updatedAt.getTime());
+    });
+
+    it('removes only the managed tools missing from the definition with --prune-tools', async () => {
+      const tools = V2_TOOLS.filter(
+        (tool) => !['execute_code', 'design__web_search_mcp_etus'].includes(tool),
+      );
+      const dry = await seedDesignAgent({
+        definition: definition({ tools }),
+        author,
+        pruneTools: true,
+        dryRun: true,
+      });
+      expect(dry.prunedTools).toEqual(['execute_code']);
+      expect((await models.Agent.findOne({ id: AGENT_ID }).lean()).tools).toContain('execute_code');
+
+      const result = await seedDesignAgent({
+        definition: definition({ tools }),
+        author,
+        pruneTools: true,
+      });
+
+      expect(result.prunedTools).toEqual(['execute_code']);
+      const agent = await models.Agent.findOne({ id: AGENT_ID }).lean();
+      expect(agent.tools).not.toContain('execute_code');
+      expect(agent.tools).not.toContain('design__web_search_mcp_etus');
+      expect(agent.tools).toEqual(expect.arrayContaining(['calculator', OTHER_SERVER_TOOL]));
+      expect(agent.mcpServerNames).toEqual(['etus', 'github']);
+    });
+
+    it('drops the etus server only when pruning leaves none of its tools', async () => {
+      const result = await seedDesignAgent({
+        definition: definition({ tools: NATIVE_TOOLS }),
+        author,
+        pruneTools: true,
+      });
+
+      expect(result.prunedTools).toEqual(SCREEN_TOOLS.slice(1));
+      const agent = await models.Agent.findOne({ id: AGENT_ID }).lean();
+      expect(agent.tools).toEqual([
+        'ask_user_question',
+        'execute_code',
+        'calculator',
+        OTHER_SERVER_TOOL,
+        'web_search',
+        'file_search',
+        'image_gen_oai',
+      ]);
+      expect(agent.mcpServerNames).toEqual(['github']);
+    });
   });
 
   it('does not write anything on --dry-run', async () => {
@@ -232,17 +363,22 @@ describe('seed-design-agent', () => {
     );
   });
 
-  it('rejects tools outside the allowlist and unknown fields', () => {
-    expect(() => parseAgentDefinition(definition({ tools: ['execute_code'] }))).toThrow('tools.0');
+  it('rejects tools outside the allowlist, repeated tools and unknown fields', () => {
+    expect(() => parseAgentDefinition(definition({ tools: ['create_file'] }))).toThrow('tools.0');
+    expect(() => parseAgentDefinition(definition({ tools: ['calculator'] }))).toThrow('tools.0');
+    expect(() => parseAgentDefinition(definition({ tools: ['web_search', 'web_search'] }))).toThrow(
+      'must not repeat a tool',
+    );
     expect(() => parseAgentDefinition(definition({ skills: ['x'] }))).toThrow('skills');
   });
 
-  it('accepts the v1 and v2 tool names', () => {
+  it('accepts the v1 and v2 tool names and the native chat tools', () => {
     expect(parseAgentDefinition(definition()).tools).toEqual([
       'image_gen_oai',
       'ask_user_question',
     ]);
     expect(parseAgentDefinition(definition({ tools: DESIGN_TOOLS })).tools).toEqual(DESIGN_TOOLS);
+    expect(parseAgentDefinition(definition({ tools: V2_TOOLS })).tools).toEqual(V2_TOOLS);
   });
 
   it.each([
@@ -351,6 +487,8 @@ describe('seed-design-agent', () => {
           `unchanged: ${AGENT_ID}`,
         ]),
       );
+      await main(['--file', file, '--author-email', 'admin@etus.test', '--prune-tools']);
+      expect(log.mock.calls.filter((call) => call[0] === `unchanged: ${AGENT_ID}`)).toHaveLength(2);
       await main(['--remove', '--file', file, '--author-email', 'admin@etus.test']);
       expect(await models.Agent.countDocuments({ id: AGENT_ID })).toBe(0);
     } finally {

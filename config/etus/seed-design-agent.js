@@ -21,7 +21,13 @@ const SKILL_SOURCE_PROVIDER = 'github';
 const SKILL_SOURCE_ID = 'etus-design';
 const AGENT_PROVIDER = 'ETUS AI';
 const RECOMMENDED_MODEL = 'cc/claude-sonnet-5';
-const ALLOWED_TOOLS = ['image_gen_oai', 'ask_user_question'];
+const NATIVE_TOOLS = [
+  'execute_code',
+  'web_search',
+  'file_search',
+  'image_gen_oai',
+  'ask_user_question',
+];
 const DESIGN_MCP_SERVER = 'etus';
 const DESIGN_TOOL_PATTERN = /^design__[a-z][a-z0-9_]{1,47}_mcp_etus$/;
 const DESIGN_TOOL_SUFFIX = `${Constants.mcp_delimiter}${DESIGN_MCP_SERVER}`;
@@ -61,8 +67,16 @@ function isDesignTool(name) {
   );
 }
 
-const toolName = z.string().refine((name) => ALLOWED_TOOLS.includes(name) || isDesignTool(name), {
-  message: `must be one of ${ALLOWED_TOOLS.join(', ')} or design__<name>_mcp_${DESIGN_MCP_SERVER}`,
+function isManagedTool(name) {
+  return NATIVE_TOOLS.includes(name) || isDesignTool(name);
+}
+
+function isDesignServerTool(name) {
+  return name.endsWith(DESIGN_TOOL_SUFFIX);
+}
+
+const toolName = z.string().refine(isManagedTool, {
+  message: `must be one of ${NATIVE_TOOLS.join(', ')} or design__<name>_mcp_${DESIGN_MCP_SERVER}`,
 });
 
 const AgentDefinitionSchema = z
@@ -80,7 +94,10 @@ const AgentDefinitionSchema = z
     model: nonEmpty,
     model_parameters: z.record(z.unknown()).optional(),
     artifacts: z.enum(['default', 'shadcnui', 'custom']).default('default'),
-    tools: z.array(toolName).default([]),
+    tools: z
+      .array(toolName)
+      .refine((names) => new Set(names).size === names.length, 'must not repeat a tool')
+      .default([]),
     skillNames: z
       .array(nonEmpty)
       .max(MAX_SKILLS)
@@ -141,7 +158,27 @@ async function resolveSkillIds(skillNames, { allowMissing = false } = {}) {
   return { ids, missing };
 }
 
-function buildAgentPayload(definition, skillIds) {
+function mergeTools(existing, definitionTools, { pruneTools = false } = {}) {
+  const wanted = new Set(definitionTools);
+  const current = existing?.tools ?? [];
+  const kept = pruneTools
+    ? current.filter((tool) => !isManagedTool(tool) || wanted.has(tool))
+    : [...current];
+  const keptSet = new Set(kept);
+  const tools = [...kept, ...definitionTools.filter((tool) => !keptSet.has(tool))];
+  const pruned = current.filter((tool) => !tools.includes(tool));
+  const unlisted = tools.filter((tool) => !wanted.has(tool));
+
+  const serverNames = new Set(existing?.mcpServerNames ?? []);
+  if (tools.some(isDesignTool)) {
+    serverNames.add(DESIGN_MCP_SERVER);
+  } else if (pruneTools && !tools.some(isDesignServerTool)) {
+    serverNames.delete(DESIGN_MCP_SERVER);
+  }
+  return { tools, mcpServerNames: [...serverNames], pruned, unlisted };
+}
+
+function buildAgentPayload(definition, skillIds, merged = mergeTools(null, definition.tools)) {
   const payload = {
     name: definition.name,
     description: definition.description,
@@ -150,8 +187,8 @@ function buildAgentPayload(definition, skillIds) {
     model: definition.model,
     model_parameters: definition.model_parameters ?? {},
     artifacts: definition.artifacts,
-    tools: definition.tools,
-    mcpServerNames: definition.tools.some(isDesignTool) ? [DESIGN_MCP_SERVER] : [],
+    tools: merged.tools,
+    mcpServerNames: merged.mcpServerNames,
     skills: skillIds,
     skills_enabled: definition.skills_enabled,
     skills_scope: definition.skills_scope,
@@ -234,6 +271,7 @@ async function seedDesignAgent({
   author,
   dryRun = false,
   allowMissing = false,
+  pruneTools = false,
 }) {
   const { getAgent, createAgent, updateAgent } = require('~/models');
   const definition = parseAgentDefinition(rawDefinition);
@@ -249,11 +287,18 @@ async function seedDesignAgent({
     warnings.push(`Seeding without skills that are not synced: ${missing.join(', ')}`);
   }
 
-  const payload = buildAgentPayload(definition, ids);
   const existing = await getAgent({ id: definition.id });
   if (existing) {
     assertSameAuthor(existing, author);
   }
+  const merged = mergeTools(existing, definition.tools, { pruneTools });
+  if (merged.unlisted.length > 0) {
+    warnings.push(
+      `Keeping tools that are not in the definition: ${merged.unlisted.join(', ')}` +
+        (pruneTools ? '' : ' (pass --prune-tools to remove the ones this seed manages)'),
+    );
+  }
+  const payload = buildAgentPayload(definition, ids, merged);
 
   const changes = diffAgent(existing, payload);
   let action = 'unchanged';
@@ -270,6 +315,7 @@ async function seedDesignAgent({
     changes,
     skillIds: ids,
     missingSkills: missing,
+    prunedTools: merged.pruned,
     ownerGranted: false,
     dryRun,
     warnings,
@@ -320,6 +366,7 @@ const CLI_OPTIONS = {
   'agent-id': { type: 'string' },
   'dry-run': { type: 'boolean', default: false },
   'allow-missing': { type: 'boolean', default: false },
+  'prune-tools': { type: 'boolean', default: false },
   remove: { type: 'boolean', default: false },
 };
 
@@ -330,6 +377,9 @@ function printResult(result) {
     console.log(
       `  ${change.field}: ${JSON.stringify(change.before)} -> ${JSON.stringify(change.after)}`,
     );
+  }
+  if (result.prunedTools?.length > 0) {
+    console.log(`  ${prefix}pruned tools: ${result.prunedTools.join(', ')}`);
   }
   if (result.ownerGranted) {
     console.log(`  ${prefix}owner permission granted`);
@@ -359,6 +409,7 @@ async function main(argv) {
       author,
       dryRun: args['dry-run'],
       allowMissing: args['allow-missing'],
+      pruneTools: args['prune-tools'],
     }),
   );
 }
@@ -370,9 +421,12 @@ if (require.main === module) {
 module.exports = {
   SKILL_SOURCE_ID,
   AGENT_PROVIDER,
-  ALLOWED_TOOLS,
+  NATIVE_TOOLS,
+  SEEDED_FIELDS,
   DESIGN_MCP_SERVER,
   isDesignTool,
+  isManagedTool,
+  mergeTools,
   parseAgentDefinition,
   resolveSkillIds,
   buildAgentPayload,

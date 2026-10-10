@@ -33,6 +33,15 @@ async function waitFor(url, label, timeoutMs = 90_000) {
   throw new Error(`${label} did not start at ${url}`);
 }
 
+async function assertPortsFree() {
+  for (const [label, port] of Object.entries(PORTS)) {
+    const response = await fetch(`http://127.0.0.1:${port}/`).catch(() => null);
+    if (response) {
+      throw new Error(`port ${port} (${label}) is already in use; stop the old process first`);
+    }
+  }
+}
+
 function startProcess(label, command, args, { cwd, env, logDir }) {
   const log = fs.openSync(path.join(logDir, `${label}.log`), 'a');
   const child = spawn(command, args, {
@@ -88,16 +97,21 @@ async function startStack() {
   if (!fs.existsSync(path.join(ROOT, 'client', 'dist', 'index.html'))) {
     throw new Error('client/dist is missing: run `npm run build:client` first');
   }
+  await assertPortsFree();
   const logDir = fs.mkdtempSync(path.join(os.tmpdir(), 'etus-design-home-e2e-'));
   const storageDir = path.join(logDir, 'storage');
   fs.mkdirSync(storageDir);
   const mongo = startMongo();
   const state = { logDir, container: mongo.name, pids: [], chatUrl: CHAT_URL, ports: PORTS };
+  const track = (pid) => {
+    state.pids.push(pid);
+    fs.writeFileSync(STATE_FILE, JSON.stringify(state));
+  };
   fs.writeFileSync(STATE_FILE, JSON.stringify(state));
   await waitForMongo(mongo.name);
 
   const hubUrl = `http://127.0.0.1:${PORTS.hub}`;
-  state.pids.push(
+  track(
     startProcess('fake-hub', process.execPath, [path.join(__dirname, 'fake-hub-server.js')], {
       cwd: ROOT,
       env: { FAKE_HUB_PORT: String(PORTS.hub) },
@@ -106,7 +120,7 @@ async function startStack() {
   );
   await waitFor(`${hubUrl}/.well-known/jwks.json`, 'fake hub');
 
-  state.pids.push(
+  track(
     startProcess('design-service', process.execPath, ['src/main.ts'], {
       cwd: path.join(ETUS_DESIGN_DIR, 'design-service'),
       env: {
@@ -131,7 +145,7 @@ async function startStack() {
   );
   await waitFor(`http://127.0.0.1:${PORTS.design}/v1/health`, 'design-service');
 
-  state.pids.push(
+  track(
     startProcess('proxy-harness', process.execPath, [path.join(__dirname, 'proxy-harness.js')], {
       cwd: path.join(ROOT, 'api'),
       env: {
@@ -145,7 +159,7 @@ async function startStack() {
   );
   await waitFor(`http://127.0.0.1:${PORTS.proxy}/api/etus/design/me`, 'design proxy harness');
 
-  state.pids.push(
+  track(
     startProcess('librechat', process.execPath, ['api/server/index.js'], {
       cwd: ROOT,
       env: {
@@ -173,7 +187,6 @@ async function startStack() {
       logDir,
     }),
   );
-  fs.writeFileSync(STATE_FILE, JSON.stringify(state));
   await waitFor(`${CHAT_URL}/api/config`, 'LibreChat', 180_000);
   return state;
 }
@@ -185,7 +198,7 @@ function stopStack() {
   const state = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
   for (const pid of state.pids ?? []) {
     try {
-      process.kill(-pid, 'SIGTERM');
+      process.kill(-pid, 'SIGKILL');
     } catch (error) {
       if (error.code !== 'ESRCH') {
         throw error;

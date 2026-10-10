@@ -87,3 +87,18 @@ node config/etus/e2e/chat/chat.mjs
 ```
 
 O modelo falso guarda os pedidos em memória (`GET /__requests`); reinicie-o antes de cada execução. As capturas ficam em `C6_SCREENSHOTS`, quando definido.
+
+## `e2e/inspect/`
+
+E2e local da edição direta na prévia (pacote C8, critério C-4): no modo **Editar**, troca o texto e a cor de um título, salva e confere o HTML gravado (com `If-Match` e `X-Etus-Version-Source: inline_edit`); depois simula o agente gravando no meio da edição e confere as duas saídas do conflito (**Aplicar de novo sobre a versão nova** e **Recarregar**), além do painel em 390x844 nos temas claro e escuro, com axe.
+
+Usa o LibreChat real com o `client/dist` e login local; o design-service é simulado pelo Playwright em `/api/etus/design/*` (com a regra de `If-Match` do serviço) e a prévia em `/preview/*` sai com a CSP `sandbox` e o `bridge.js` real do `etus-design`.
+
+```sh
+npm run build:packages && (cd client && NODE_ENV=production ../node_modules/.bin/vite build)
+NODE_ENV=production node api/server/index.js   # .env local com PORT=3188 e MONGO_URI de um MongoDB em Docker
+node config/etus/e2e/inspect/inspect.mjs register
+ETUS_DESIGN_BRIDGE_JS=../etus-design/design-service/src/preview/bridge/bridge.js node config/etus/e2e/inspect/inspect.mjs
+```
+
+`C8_BASE_URL` troca o endereço do LibreChat e `C8_SCREENSHOTS` guarda as capturas numa pasta.

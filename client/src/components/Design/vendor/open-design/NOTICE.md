@@ -10,11 +10,19 @@ Esta pasta guarda o código da tela Design que vem do Open Design (https://githu
 
 ## O que veio
 
-| Arquivo aqui | Origem    | O que mudou        |
-| ------------ | --------- | ------------------ |
-| `LICENSE`    | `LICENSE` | nada (cópia exata) |
+| Arquivo aqui        | Origem                                     | O que mudou                                                                                   |
+| ------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| `LICENSE`           | `LICENSE`                                  | nada (cópia exata)                                                                            |
+| `source-patches.ts` | `apps/web/src/edit-mode/source-patches.ts` | reescrito para os seletores da ponte `etus:` e gravação só dos trechos alterados (ver abaixo) |
 
-Os arquivos adaptados do edit-mode do Open Design (`source-patches.ts`, `edit-types.ts`, `css-allowlist.ts` e, se o export no navegador for usado, `zip.ts`) entram com o pacote da edição inline (C8). Cada arquivo novo entra nesta tabela e no `SOURCES.json`, com o caminho de origem, o commit e o sha256 do arquivo daqui.
+`source-patches.ts` veio com a edição inline (C8). O que mudou em relação ao original:
+
+- O original aplica cada patch num documento lido com `DOMParser` e grava o arquivo inteiro serializado pelo DOM, com elementos achados por `data-od-id`. Aqui o elemento é achado pelo seletor CSS da ponte `etus:` (C 3.5) e a gravação troca só dois trechos do código: o texto do elemento e o atributo `style` da tag. Para saber onde fica cada tag no arquivo, um leitor de tags marca cada tag de abertura numa cópia do código antes do `DOMParser`; o resto do arquivo fica byte a byte igual.
+- Ficaram do original: a leitura com `DOMParser`, a recusa de texto em elemento com marcação dentro e a regra de valor vazio remover a propriedade do `style`.
+- Saíram: tokens, links, imagens, atributos, troca de HTML, remoção de elemento, brand kit e os overrides em tempo de execução.
+- Entraram: validação de cada propriedade e valor pela lista de `preview/host-protocol.ts`, texto sempre escapado, conferência do texto do elemento antes de aplicar (o elemento ainda é o mesmo) e um segundo `DOMParser` no resultado, que recusa a gravação se a estrutura do documento mudou ou se o texto e o estilo não ficaram como pedido.
+
+`edit-types.ts` e `css-allowlist.ts` não foram criados: os tipos do patch ficam no próprio `source-patches.ts` e a lista de propriedades editáveis já existe em `preview/host-protocol.ts` (spec C 3.5 e ponte do design-service), sem cópia do Open Design. `zip.ts` não veio porque o export é feito no design-service.
 
 ## Regras
 

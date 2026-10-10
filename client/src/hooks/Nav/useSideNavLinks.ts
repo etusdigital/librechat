@@ -34,6 +34,7 @@ import { SchedulePanel } from '~/components/SidePanel/Schedules';
 import Parameters from '~/components/SidePanel/Parameters/Panel';
 import { MemoryPanel } from '~/components/SidePanel/Memories';
 import FilesPanel from '~/components/SidePanel/Files/Panel';
+import { useDesignNavLink } from '~/components/Design/nav';
 import { PromptsAccordion } from '~/components/Prompts';
 import { SkillsAccordion } from '~/components/Skills';
 
@@ -95,12 +96,17 @@ export default function useSideNavLinks({
     permission: Permissions.USE,
   });
   const { availableMCPServers } = useMCPServerManager();
+  const designLink = useDesignNavLink();
 
   const { agentsConfig } = useGetAgentsConfig({ endpointsConfig });
   const { skillsEnabled } = useAgentCapabilities(agentsConfig?.capabilities);
 
   const Links = useMemo(() => {
     const links: NavLink[] = [];
+
+    if (designLink) {
+      links.push(designLink);
+    }
 
     if (
       endpointsConfig?.[EModelEndpoint.agents] &&
@@ -264,6 +270,7 @@ export default function useSideNavLinks({
     hasAccessToCreateMCP,
     includeHidePanel,
     hidePanel,
+    designLink,
   ]);
 
   return Links;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useDesignSystemQuery } from '../api/queries';
 import { useDesignLocalize } from '../i18n';
@@ -10,11 +10,17 @@ export function useApplyDesignSystemRequest() {
   const systemId = searchParams.get(DESIGN_QUERY.applyDesignSystem) ?? '';
   const system = useDesignSystemQuery(systemId);
   const [composerText, setComposerText] = useState<string | null>(null);
+  const handled = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!systemId || system.isFetching) {
+    if (!systemId) {
+      handled.current = null;
       return;
     }
+    if (system.isFetching || handled.current === systemId) {
+      return;
+    }
+    handled.current = systemId;
     const name = system.data?.name ?? systemId;
     setComposerText(localize('workspace.chat.apply_design_system', { name }));
     setSearchParams(

@@ -438,9 +438,12 @@ describe('workspace files', () => {
         'Apply the design system Airbnb',
       ),
     );
-    expect(screen.getByTestId('location')).toHaveTextContent('/design/prj_abc?tab=x');
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent(/^\/design\/prj_abc\?tab=x$/),
+    );
     await userEvent.click(screen.getByRole('button', { name: 'use composer text' }));
-    expect(screen.getByTestId('composer-text')).toHaveTextContent('');
+    await waitFor(() => expect(screen.getByTestId('composer-text')).toBeEmptyDOMElement());
+    expect(api.getDesignSystem).toHaveBeenCalledWith('airbnb', expect.anything());
   });
 });
 

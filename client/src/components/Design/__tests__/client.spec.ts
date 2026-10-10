@@ -128,6 +128,16 @@ describe('design API client', () => {
     expect(init.headers['Content-Type']).toBe('application/json');
   });
 
+  it('lists the conversations bound to a project', async () => {
+    const items = [{ conversationId: 'conv-2', updatedAt: '2026-10-10T12:00:00.000Z' }];
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { items }));
+    await expect(designApi.listProjectConversations('prj_1')).resolves.toEqual({ items });
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/etus/design/projects/prj_1/conversations',
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+
   it('reads file content with its version headers', async () => {
     fetchMock.mockResolvedValueOnce(
       fakeResponse(200, '<h1>oi</h1>', {

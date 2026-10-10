@@ -178,6 +178,76 @@ describe('applyHubDefaults', () => {
   });
 });
 
+describe('hub-controlled MCP servers', () => {
+  const etus = { type: 'streamable-http', url: 'https://apps.etus.io/mcp', requiresOAuth: false };
+  const deployment = deepFreeze({
+    mcpConfig: { github: {}, jira: {} },
+    etusControlledMcpServers: { etus },
+  });
+  const personConfig = () =>
+    deepFreeze({ ...baseConfig(), etusControlledMcpServers: deployment.etusControlledMcpServers });
+  const grantedFor = async (values) => {
+    getCachedHubValues.mockResolvedValue(values);
+    const result = await applyHubDefaults({
+      appConfig: personConfig(),
+      baseConfig: deployment,
+      userId: 'u1',
+    });
+    return result.mcpConfig;
+  };
+
+  beforeEach(() => {
+    isHubEnabled.mockReturnValue(true);
+  });
+
+  it('adds the server for a person the hub granted it to', async () => {
+    const mcpConfig = await grantedFor({ mcpServers: ['etus', 'finance'] });
+    expect(mcpConfig.etus).toBe(etus);
+    expect(Object.keys(mcpConfig)).toEqual(['github', 'jira', 'finance', 'etus']);
+  });
+
+  it('keeps the server hidden from a person the hub did not grant it to', async () => {
+    expect(Object.keys(await grantedFor({ mcpServers: ['finance'] }))).toEqual([
+      'github',
+      'jira',
+      'finance',
+    ]);
+    expect((await grantedFor({ mcpServers: [] })).etus).toBeUndefined();
+    expect((await grantedFor({ temperature: 1 })).etus).toBeUndefined();
+    expect((await grantedFor({})).etus).toBeUndefined();
+  });
+
+  it('keeps the server hidden while the hub has no answer or is off', async () => {
+    expect((await grantedFor(null)).etus).toBeUndefined();
+
+    getCachedHubValues.mockRejectedValue(new Error('redis down'));
+    const failed = await applyHubDefaults({
+      appConfig: personConfig(),
+      baseConfig: deployment,
+      userId: 'u1',
+    });
+    expect(failed.mcpConfig.etus).toBeUndefined();
+
+    isHubEnabled.mockReturnValue(false);
+    expect((await grantedFor({ mcpServers: ['etus'] })).etus).toBeUndefined();
+  });
+
+  it('never grants a server without a signed-in person', async () => {
+    getCachedHubValues.mockResolvedValue({ mcpServers: ['etus'] });
+    const appConfig = personConfig();
+    expect(await applyHubDefaults({ appConfig, baseConfig: deployment })).toBe(appConfig);
+  });
+
+  it('grants into a deployment whose YAML has no other MCP server', () => {
+    const result = applyHubValues(
+      { etusControlledMcpServers: { etus } },
+      { mcpConfig: null, etusControlledMcpServers: { etus } },
+      { mcpServers: ['etus'] },
+    );
+    expect(result.mcpConfig).toEqual({ etus });
+  });
+});
+
 const routerSpec = (name, model, extra = {}) => ({
   name,
   label: name,

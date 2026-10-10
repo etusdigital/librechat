@@ -7,6 +7,7 @@ const {
   SystemRoles,
 } = require('librechat-data-provider');
 const { pushSettingsCatalog } = require('./hubClient');
+const { controlledMcpServers } = require('./mcpControl');
 const db = require('~/models');
 
 const MAX_OPTIONS = 2000;
@@ -148,6 +149,14 @@ function buildCatalog({
   };
 }
 
+function catalogMcpServers(appConfig, dbServers = []) {
+  const configured = { ...appConfig?.mcpConfig, ...controlledMcpServers(appConfig) };
+  return [
+    ...Object.entries(configured).map(([name, config]) => ({ name, title: config?.title })),
+    ...dbServers.map((server) => ({ name: server.serverName, title: server.config?.title })),
+  ];
+}
+
 async function catalogResourceFilter(resourceType, adminIds) {
   const publicIds = await db.findPublicResourceIds(resourceType, PermissionBits.VIEW);
   return { $or: [{ author: { $in: adminIds } }, { _id: { $in: publicIds } }] };
@@ -192,13 +201,7 @@ async function collectCatalog({ appConfig, loadModels }) {
     logger.warn(`[EtusHub] Could not list models for the catalog: ${error?.message ?? error}`);
   }
 
-  const mcpServers = [
-    ...Object.entries(appConfig?.mcpConfig ?? {}).map(([name, config]) => ({
-      name,
-      title: config?.title,
-    })),
-    ...dbServers.map((server) => ({ name: server.serverName, title: server.config?.title })),
-  ];
+  const mcpServers = catalogMcpServers(appConfig, dbServers);
 
   return buildCatalog({
     promptGroups,
@@ -222,6 +225,7 @@ async function pushCatalog({ appConfig, loadModels }) {
 module.exports = {
   buildCatalog,
   usableModels,
+  catalogMcpServers,
   collectCatalog,
   pushCatalog,
 };

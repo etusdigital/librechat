@@ -12,6 +12,7 @@ const {
 const { setCachedTools, invalidateCachedTools } = require('./getCachedTools');
 const { loadAndFormatTools } = require('~/server/services/start/tools');
 const { applyHubDefaults } = require('~/server/services/Etus/defaults');
+const { withdrawControlledMcpServers } = require('~/server/services/Etus/mcpControl');
 const loadCustomConfig = require('./loadCustomConfig');
 const getLogStores = require('~/cache/getLogStores');
 const paths = require('~/config/paths');
@@ -43,7 +44,8 @@ const loadBaseConfig = async (mode) => {
     adminIncluded: config.includedTools,
     directory: paths.structuredTools,
   });
-  return AppService({ config, paths, systemTools });
+  /** Etus: hub-controlled MCP servers leave the shared YAML tier; the hub grants them per person. */
+  return withdrawControlledMcpServers(await AppService({ config, paths, systemTools }));
 };
 
 const { getAppConfig, clearAppConfigCache, clearOverrideCache } = createAppConfigService({

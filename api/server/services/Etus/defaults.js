@@ -2,6 +2,7 @@ const { logger } = require('@librechat/data-schemas');
 const { getCachedHubValues } = require('./access');
 const { isHubEnabled } = require('./hubClient');
 const { getAllowedModels, isModelFilterEnabled } = require('./routerModels');
+const { controlledMcpServers } = require('./mcpControl');
 
 const HUB_SPEC_NAME = 'etus-hub-default';
 const SPEC_PREFIX = 'spec:';
@@ -89,17 +90,20 @@ function applyModelDefaults(appConfig, values) {
 }
 
 function applyMcpFilter(appConfig, baseConfig, values) {
-  if (!Array.isArray(values.mcpServers) || !appConfig.mcpConfig) {
+  if (!Array.isArray(values.mcpServers)) {
     return appConfig;
   }
   const allowed = new Set(values.mcpServers);
   const yamlServers = new Set(Object.keys(baseConfig?.mcpConfig ?? {}));
-  const entries = Object.entries(appConfig.mcpConfig);
+  const entries = Object.entries(appConfig.mcpConfig ?? {});
   const kept = entries.filter(([name]) => allowed.has(name) || yamlServers.has(name));
-  if (kept.length === entries.length) {
+  const granted = Object.entries(controlledMcpServers(baseConfig)).filter(([name]) =>
+    allowed.has(name),
+  );
+  if (kept.length === entries.length && granted.length === 0) {
     return appConfig;
   }
-  return { ...appConfig, mcpConfig: Object.fromEntries(kept) };
+  return { ...appConfig, mcpConfig: Object.fromEntries([...kept, ...granted]) };
 }
 
 const isRouterSpec = (spec) => spec?.preset?.endpoint === ROUTER_ENDPOINT;

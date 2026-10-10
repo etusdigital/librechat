@@ -18,8 +18,8 @@ import { useInView } from './use-in-view';
 
 const EMPTY: Record<ProjectScope, { icon: LucideIcon; key: DesignTranslationKey }> = {
   mine: { icon: FolderPlus, key: 'home_empty' },
-  shared: { icon: Users, key: 'home_empty_shared' },
-  company: { icon: Building2, key: 'home_empty_company' },
+  shared: { icon: Users, key: 'home.empty_shared' },
+  company: { icon: Building2, key: 'home.empty_company' },
 };
 
 function ProjectThumbnail({
@@ -37,7 +37,7 @@ function ProjectThumbnail({
     <div ref={ref}>
       <FrameThumbnail
         src={src ?? null}
-        title={localize('home_thumbnail_title', { name: project.name })}
+        title={localize('home.thumbnail_title', { name: project.name })}
         fallback={<SwatchArt system={system} icon={PROJECT_KIND_ICONS[project.kind]} />}
       />
     </div>
@@ -75,7 +75,7 @@ export function ProjectCard({
           ) : null}
           {showOwner ? (
             <span className="truncate text-xs text-text-secondary">
-              {localize('home_project_owner', { name: project.owner.name })}
+              {localize('home.project_owner', { name: project.owner.name })}
             </span>
           ) : null}
           <span className="mt-auto flex min-w-0 pt-2">
@@ -154,7 +154,7 @@ export default function ProjectGrid({
             fetchNextPage();
           }}
         >
-          {localize(isFetchingNextPage ? 'loading' : 'home_load_more')}
+          {localize(isFetchingNextPage ? 'loading' : 'home.load_more')}
         </Button>
       ) : null}
     </div>

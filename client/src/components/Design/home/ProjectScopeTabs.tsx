@@ -6,9 +6,9 @@ import { cn } from '~/utils';
 export const PROJECT_SCOPES: readonly ProjectScope[] = ['mine', 'shared', 'company'];
 
 const SCOPE_KEYS: Record<ProjectScope, DesignTranslationKey> = {
-  mine: 'home_tab_mine',
-  shared: 'home_tab_shared',
-  company: 'home_tab_company',
+  mine: 'home.tab_mine',
+  shared: 'home.tab_shared',
+  company: 'home.tab_company',
 };
 
 export const scopeTabId = (scope: ProjectScope) => `design-home-tab-${scope}`;
@@ -48,7 +48,7 @@ export default function ProjectScopeTabs({
   return (
     <div
       role="tablist"
-      aria-label={localize('home_tabs_label')}
+      aria-label={localize('home.tabs_label')}
       onKeyDown={onKeyDown}
       className="-mx-1 flex gap-1 overflow-x-auto border-b border-border-light px-1"
     >

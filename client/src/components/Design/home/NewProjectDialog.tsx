@@ -42,24 +42,24 @@ import { designProjectPath } from '../paths';
 import { cn } from '~/utils';
 
 const STEP_KEYS: Record<NewProjectStep, DesignTranslationKey> = {
-  kind: 'home_new_step_kind',
-  template: 'home_new_step_template',
-  system: 'home_new_step_system',
-  details: 'home_new_step_details',
+  kind: 'home.new_step_kind',
+  template: 'home.new_step_template',
+  system: 'home.new_step_system',
+  details: 'home.new_step_details',
 };
 
 const KIND_DESCRIPTION_KEYS: Record<NewProjectKind, DesignTranslationKey> = {
-  prototype: 'home_new_kind_prototype_description',
-  deck: 'home_new_kind_deck_description',
-  doc: 'home_new_kind_doc_description',
-  image: 'home_new_kind_image_description',
-  video: 'home_new_kind_video_description',
+  prototype: 'home.new_kind_prototype_description',
+  deck: 'home.new_kind_deck_description',
+  doc: 'home.new_kind_doc_description',
+  image: 'home.new_kind_image_description',
+  video: 'home.new_kind_video_description',
 };
 
 const CREATE_ERROR_KEYS: Record<string, DesignTranslationKey> = {
-  too_many_projects: 'home_create_error_limit',
-  design_system_not_found: 'home_create_error_system',
-  invalid_input: 'home_create_error_invalid',
+  too_many_projects: 'home.create_error_limit',
+  design_system_not_found: 'home.create_error_system',
+  invalid_input: 'home.create_error_invalid',
 };
 
 export function createErrorKey(error: unknown): DesignTranslationKey {
@@ -68,7 +68,7 @@ export function createErrorKey(error: unknown): DesignTranslationKey {
     return CREATE_ERROR_KEYS[code];
   }
   const key = designErrorMessageKey(error);
-  return key === 'error_generic' ? 'home_create_error' : key;
+  return key === 'error_generic' ? 'home.create_error' : key;
 }
 
 function KindStep({
@@ -81,7 +81,7 @@ function KindStep({
   const localize = useDesignLocalize();
   return (
     <fieldset className="min-w-0">
-      <legend className="sr-only">{localize('home_new_step_kind')}</legend>
+      <legend className="sr-only">{localize('home.new_step_kind')}</legend>
       <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
         {NEW_PROJECT_KINDS.map((kind) => {
           const Icon = PROJECT_KIND_ICONS[kind];
@@ -141,20 +141,20 @@ function DetailsStep({
     <div className="flex min-w-0 flex-col gap-5">
       <dl className="grid grid-cols-1 gap-2 rounded-xl border border-border-light bg-surface-primary p-3 text-sm min-[420px]:grid-cols-3">
         <div className="min-w-0">
-          <dt className="text-xs text-text-secondary">{localize('home_new_summary_kind')}</dt>
+          <dt className="text-xs text-text-secondary">{localize('home.new_summary_kind')}</dt>
           <dd className="truncate text-text-primary">{localize(PROJECT_KIND_KEYS[draft.kind])}</dd>
         </div>
         <div className="min-w-0">
-          <dt className="text-xs text-text-secondary">{localize('home_new_summary_template')}</dt>
+          <dt className="text-xs text-text-secondary">{localize('home.new_summary_template')}</dt>
           <dd className="truncate text-text-primary">{templateName}</dd>
         </div>
         <div className="min-w-0">
-          <dt className="text-xs text-text-secondary">{localize('home_new_summary_system')}</dt>
+          <dt className="text-xs text-text-secondary">{localize('home.new_summary_system')}</dt>
           <dd className="truncate text-text-primary">{system?.name ?? draft.designSystemId}</dd>
         </div>
       </dl>
       <div className="flex flex-col gap-2">
-        <Label htmlFor="design-project-name">{localize('home_new_name')}</Label>
+        <Label htmlFor="design-project-name">{localize('home.new_name')}</Label>
         <Input
           id="design-project-name"
           value={draft.name}
@@ -162,23 +162,23 @@ function DetailsStep({
           required
           ref={nameRef}
           autoComplete="off"
-          placeholder={localize('home_new_name_placeholder')}
+          placeholder={localize('home.new_name_placeholder')}
           onChange={(event) => onChange({ name: event.target.value })}
         />
       </div>
       <div className="flex flex-col gap-2">
-        <Label htmlFor="design-project-brief">{localize('home_new_brief')}</Label>
+        <Label htmlFor="design-project-brief">{localize('home.new_brief')}</Label>
         <Textarea
           id="design-project-brief"
           value={draft.brief}
           maxLength={BRIEF_MAX}
           rows={5}
           aria-describedby="design-project-brief-hint"
-          placeholder={localize('home_new_brief_placeholder')}
+          placeholder={localize('home.new_brief_placeholder')}
           onChange={(event) => onChange({ brief: event.target.value })}
         />
         <p id="design-project-brief-hint" className="text-xs text-text-secondary">
-          {localize('home_new_brief_hint')}
+          {localize('home.new_brief_hint')}
         </p>
       </div>
     </div>
@@ -275,7 +275,7 @@ function NewProjectForm({
           selectedId={draft.templateId}
           onSelect={pickTemplate}
           showBlank
-          label={localize('home_new_step_template')}
+          label={localize('home.new_step_template')}
         />
       );
       break;
@@ -297,7 +297,7 @@ function NewProjectForm({
         <DetailsStep
           draft={draft}
           onChange={update}
-          templateName={template?.name ?? localize('home_template_blank')}
+          templateName={template?.name ?? localize('home.template_blank')}
           system={system}
         />
       );
@@ -311,10 +311,10 @@ function NewProjectForm({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <OGDialogTitle className="text-lg font-semibold text-text-primary">
-              {localize('home_new_title')}
+              {localize('home.new_title')}
             </OGDialogTitle>
             <OGDialogDescription className="text-sm text-text-secondary">
-              {localize('home_new_progress', {
+              {localize('home.new_progress', {
                 current: stepIndex + 1,
                 total: NEW_PROJECT_STEPS.length,
                 step: localize(STEP_KEYS[step]),
@@ -325,7 +325,7 @@ function NewProjectForm({
             type="button"
             variant="ghost"
             size="icon-sm"
-            aria-label={localize('home_close')}
+            aria-label={localize('home.close')}
             onClick={onClose}
           >
             <X className="size-5" aria-hidden="true" />
@@ -360,7 +360,7 @@ function NewProjectForm({
         ) : null}
         <div className="flex items-center justify-between gap-2 border-t border-border-light p-4 sm:px-6">
           <Button type="button" variant="outline" onClick={back}>
-            {localize(stepIndex === 0 ? 'home_cancel' : 'home_back')}
+            {localize(stepIndex === 0 ? 'home.cancel' : 'home.back')}
           </Button>
           <Button
             type="submit"
@@ -370,7 +370,7 @@ function NewProjectForm({
             {createProject.isLoading ? (
               <Loader2 className="size-4 animate-spin" aria-hidden="true" />
             ) : null}
-            {localize(isLast ? 'home_new_create' : 'home_next')}
+            {localize(isLast ? 'home.new_create' : 'home.next')}
           </Button>
         </div>
       </form>

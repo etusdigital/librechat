@@ -84,9 +84,9 @@ function HomeContent({ me }: { me: DesignMe }) {
         >
           <Palette className="size-4 shrink-0" aria-hidden="true" />
           <span className="flex flex-col">
-            <span className="font-medium">{localize('home_systems_shortcut')}</span>
+            <span className="font-medium">{localize('home.systems_shortcut')}</span>
             <span className="text-xs text-text-secondary">
-              {localize('home_systems_shortcut_description')}
+              {localize('home.systems_shortcut_description')}
             </span>
           </span>
         </Link>
@@ -106,10 +106,10 @@ function HomeContent({ me }: { me: DesignMe }) {
             scope === 'mine' ? (
               <div className="flex flex-col gap-3">
                 <h3 className="text-sm font-medium text-text-primary">
-                  {localize('home_templates_heading')}
+                  {localize('home.templates_heading')}
                 </h3>
                 <TemplateGallery
-                  label={localize('home_templates_heading')}
+                  label={localize('home.templates_heading')}
                   onSelect={startFromTemplate}
                 />
               </div>
@@ -137,7 +137,7 @@ function NewProjectButton() {
       onClick={() => setSearch(presetParams(search, {}), { replace: true })}
     >
       <Plus className="size-4" aria-hidden="true" />
-      {localize('home_new_project')}
+      {localize('home.new_project')}
     </Button>
   );
 }

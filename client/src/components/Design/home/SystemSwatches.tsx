@@ -62,7 +62,7 @@ export function SwatchArt({
             className="ml-2 text-2xl font-semibold text-text-primary"
             style={{ fontFamily: system.headingFont }}
           >
-            {localize('home_system_specimen')}
+            {localize('home.system_specimen')}
           </span>
         ) : null}
       </div>

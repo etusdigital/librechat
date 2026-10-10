@@ -47,7 +47,7 @@ function TemplateThumbnail({ template }: { template: DesignTemplate }) {
     <div ref={ref}>
       <FrameThumbnail
         src={inView ? template.previewUrl : null}
-        title={localize('home_template_thumbnail_title', { name: template.name })}
+        title={localize('home.template_thumbnail_title', { name: template.name })}
         fallback={
           <div className="flex h-full items-center justify-center text-text-secondary">
             <Icon className="size-8" strokeWidth={1.5} />
@@ -84,10 +84,10 @@ function BlankCard({ selected, onSelect }: { selected: boolean; onSelect: () => 
         </span>
         <span className="flex flex-col gap-1 p-3">
           <span className="text-sm font-semibold text-text-primary">
-            {localize('home_template_blank')}
+            {localize('home.template_blank')}
           </span>
           <span className="text-xs text-text-secondary">
-            {localize('home_template_blank_description')}
+            {localize('home.template_blank_description')}
           </span>
         </span>
       </button>
@@ -129,11 +129,11 @@ function TemplateCard({
           variant="outline"
           size="sm"
           className="absolute bottom-2 left-3 h-8 bg-surface-secondary"
-          aria-label={localize('home_template_preview_action', { name: template.name })}
+          aria-label={localize('home.template_preview_action', { name: template.name })}
           onClick={onPreview}
         >
           <Eye className="size-4" aria-hidden="true" />
-          {localize('home_template_preview')}
+          {localize('home.template_preview')}
         </Button>
       ) : null}
     </li>
@@ -170,7 +170,7 @@ export function TemplatePreviewDialog({
               <div className="flex shrink-0 items-center gap-2">
                 {onUse ? (
                   <Button type="button" size="sm" onClick={() => onUse(template)}>
-                    {localize('home_template_use')}
+                    {localize('home.template_use')}
                   </Button>
                 ) : null}
                 <Button
@@ -179,14 +179,14 @@ export function TemplatePreviewDialog({
                   size="sm"
                   onClick={() => onOpenChange(false)}
                 >
-                  {localize('home_close')}
+                  {localize('home.close')}
                 </Button>
               </div>
             </div>
             {template.previewUrl ? (
               <iframe
                 src={template.previewUrl}
-                title={localize('home_template_preview_title', { name: template.name })}
+                title={localize('home.template_preview_title', { name: template.name })}
                 sandbox={TEMPLATE_PREVIEW_SANDBOX}
                 referrerPolicy="no-referrer"
                 className="min-h-0 w-full flex-1 border-0 bg-surface-tertiary"
@@ -264,7 +264,7 @@ export default function TemplateGallery({
     const key = designErrorMessageKey(error);
     return (
       <DesignErrorState
-        message={localize(key === 'error_generic' ? 'home_templates_error' : key)}
+        message={localize(key === 'error_generic' ? 'home.templates_error' : key)}
         onRetry={() => {
           refetch();
         }}
@@ -280,7 +280,7 @@ export default function TemplateGallery({
       {!locked && kinds.length > 1 ? (
         <div
           role="group"
-          aria-label={localize('home_template_filter')}
+          aria-label={localize('home.template_filter')}
           className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
         >
           <button
@@ -289,7 +289,7 @@ export default function TemplateGallery({
             className={chipClass(activeKind === null)}
             onClick={() => setFilter(null)}
           >
-            {localize('home_template_filter_all')}
+            {localize('home.template_filter_all')}
           </button>
           {kinds.map((value) => (
             <button
@@ -314,20 +314,20 @@ export default function TemplateGallery({
             type="search"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder={localize('home_template_search')}
-            aria-label={localize('home_template_search')}
+            placeholder={localize('home.template_search')}
+            aria-label={localize('home.template_search')}
             className="pl-9"
           />
         </div>
       ) : null}
       {locked && ofKind.length === 0 ? (
-        <p className="text-sm text-text-secondary">{localize('home_template_none_for_kind')}</p>
+        <p className="text-sm text-text-secondary">{localize('home.template_none_for_kind')}</p>
       ) : null}
       {visible.length === 0 && !showBlank && ofKind.length > 0 ? (
-        <DesignEmptyState icon={LayoutTemplate} message={localize('home_template_no_match')} />
+        <DesignEmptyState icon={LayoutTemplate} message={localize('home.template_no_match')} />
       ) : null}
       {visible.length === 0 && !showBlank && ofKind.length === 0 ? (
-        <DesignEmptyState icon={LayoutTemplate} message={localize('home_template_none')} />
+        <DesignEmptyState icon={LayoutTemplate} message={localize('home.template_none')} />
       ) : null}
       {visible.length > 0 || showBlank ? (
         <ul className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-3">
@@ -344,7 +344,7 @@ export default function TemplateGallery({
         </ul>
       ) : null}
       {showBlank && visible.length === 0 && ofKind.length > 0 ? (
-        <p className="text-sm text-text-secondary">{localize('home_template_no_match')}</p>
+        <p className="text-sm text-text-secondary">{localize('home.template_no_match')}</p>
       ) : null}
       <TemplatePreviewDialog
         template={preview}

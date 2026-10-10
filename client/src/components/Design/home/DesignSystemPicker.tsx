@@ -52,20 +52,20 @@ function SystemOption({
           className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-border-light bg-surface-primary text-lg font-semibold text-text-primary"
           style={system.headingFont ? { fontFamily: system.headingFont } : undefined}
         >
-          {localize('home_system_specimen')}
+          {localize('home.system_specimen')}
         </span>
         <span className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="flex min-w-0 items-center gap-2">
             <span className="truncate text-sm font-semibold text-text-primary">{system.name}</span>
             {isDefault ? (
               <span className="shrink-0 rounded-full border border-border-medium px-1.5 text-[11px] text-text-secondary">
-                {localize('home_system_default')}
+                {localize('home.system_default')}
               </span>
             ) : null}
           </span>
           <span className="truncate text-xs text-text-secondary">
             {system.inspiredBy
-              ? `${system.category} · ${localize('home_system_inspired_by', { brand: system.inspiredBy })}`
+              ? `${system.category} · ${localize('home.system_inspired_by', { brand: system.inspiredBy })}`
               : system.category}
           </span>
           <SwatchDots system={system} />
@@ -134,18 +134,18 @@ export default function DesignSystemPicker({
     const key = designErrorMessageKey(error);
     list = (
       <DesignErrorState
-        message={localize(key === 'error_generic' ? 'home_systems_error' : key)}
+        message={localize(key === 'error_generic' ? 'home.systems_error' : key)}
         onRetry={() => {
           refetch();
         }}
       />
     );
   } else if (systems.length === 0) {
-    list = <DesignEmptyState icon={Palette} message={localize('home_systems_empty')} />;
+    list = <DesignEmptyState icon={Palette} message={localize('home.systems_empty')} />;
   } else {
     list = (
       <div className="flex flex-col gap-3">
-        <ul aria-label={localize('home_systems_list')} className="flex flex-col gap-2">
+        <ul aria-label={localize('home.systems_list')} className="flex flex-col gap-2">
           {systems.map((system) => (
             <SystemOption
               key={system.id}
@@ -166,7 +166,7 @@ export default function DesignSystemPicker({
               fetchNextPage();
             }}
           >
-            {localize(isFetchingNextPage ? 'loading' : 'home_load_more')}
+            {localize(isFetchingNextPage ? 'loading' : 'home.load_more')}
           </Button>
         ) : null}
       </div>
@@ -177,7 +177,7 @@ export default function DesignSystemPicker({
     <div className="flex min-w-0 flex-col gap-3">
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-border-light bg-surface-primary p-3">
         <span className="flex min-w-0 items-center gap-2 text-sm text-text-primary">
-          <span className="text-text-secondary">{localize('home_system_selected')}</span>
+          <span className="text-text-secondary">{localize('home.system_selected')}</span>
           <span className="truncate font-semibold">{selected?.name ?? value}</span>
           <SwatchDots system={selected} />
         </span>
@@ -185,7 +185,7 @@ export default function DesignSystemPicker({
           to={DESIGN_SYSTEMS_PATH}
           className="inline-flex items-center gap-1 text-sm text-text-primary no-underline underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
         >
-          {localize('home_systems_gallery_link')}
+          {localize('home.systems_gallery_link')}
           <ArrowRight className="size-3.5" aria-hidden="true" />
         </Link>
       </div>
@@ -198,15 +198,15 @@ export default function DesignSystemPicker({
           type="search"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder={localize('home_systems_search')}
-          aria-label={localize('home_systems_search')}
+          placeholder={localize('home.systems_search')}
+          aria-label={localize('home.systems_search')}
           className="pl-9"
         />
       </div>
       {categories.length > 0 ? (
         <div
           role="group"
-          aria-label={localize('home_systems_categories')}
+          aria-label={localize('home.systems_categories')}
           className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
         >
           <button
@@ -215,7 +215,7 @@ export default function DesignSystemPicker({
             className={chipClass(category === '')}
             onClick={() => setCategory('')}
           >
-            {localize('home_systems_category_all')}
+            {localize('home.systems_category_all')}
           </button>
           {categories.map((name) => (
             <button

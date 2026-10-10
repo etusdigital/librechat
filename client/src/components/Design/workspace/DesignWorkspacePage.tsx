@@ -18,6 +18,7 @@ import DesignChatSlot, { useDesignChatResponding } from '../chat/DesignChatSlot'
 import { DesignCardsSkeleton, DesignErrorState } from '../common/DesignStates';
 import { clampChatWidth, readChatWidth, storeChatWidth } from './chat-width';
 import { useDesignFilesQuery, useDesignProjectQuery } from '../api/queries';
+import { useApplyDesignSystemRequest } from './use-apply-design-system';
 import MobileTabBar, { MOBILE_TAB_PANEL_IDS } from './MobileTabBar';
 import DesignAccessGate from '../common/DesignAccessGate';
 import { useProjectChanges } from './use-project-changes';
@@ -55,6 +56,7 @@ export function DesignWorkspace({ project, me }: { project: DesignProjectDetail;
     [filesQuery.data, project.files],
   );
   const entry = project.entryFile;
+  const { composerText, clearComposerText } = useApplyDesignSystemRequest();
 
   const { revision } = useProjectChanges({
     projectId,
@@ -151,7 +153,13 @@ export function DesignWorkspace({ project, me }: { project: DesignProjectDetail;
             compact ? 'flex-1' : 'shrink-0',
           )}
         >
-          <DesignChatSlot key={projectId} project={project} me={me} />
+          <DesignChatSlot
+            key={projectId}
+            project={project}
+            me={me}
+            composerText={composerText}
+            onComposerTextUsed={clearComposerText}
+          />
         </section>
         {compact ? null : (
           <ChatResizeHandle

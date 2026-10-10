@@ -97,7 +97,8 @@
       "resize_chat": "Ajustar a largura do chat"
     },
     "chat": {
-      "placeholder": "O chat com o agente Etus Design aparece aqui."
+      "placeholder": "O chat com o agente Etus Design aparece aqui.",
+      "apply_design_system": "Aplique o design system {{name}}"
     },
     "header": {
       "name_label": "Nome do projeto",
@@ -118,7 +119,8 @@
       "delete_description": "O projeto {{name}} some para todas as pessoas. Para confirmar, digite o nome do projeto.",
       "delete_name": "Nome do projeto para confirmar",
       "delete_confirm": "Apagar projeto",
-      "delete_error": "Não foi possível apagar o projeto."
+      "delete_error": "Não foi possível apagar o projeto.",
+      "design_system_change": "Trocar o design system"
     },
     "tabs": {
       "label": "Arquivos abertos",

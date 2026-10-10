@@ -14,6 +14,23 @@ jest.mock('~/components/Chat/Menus/OpenSidebar', () => ({
   default: () => null,
 }));
 
+jest.mock('../chat/DesignChatSlot', () => ({
+  __esModule: true,
+  useDesignChatResponding: () => false,
+  default: ({
+    composerText,
+    onComposerTextUsed,
+  }: {
+    composerText: string | null;
+    onComposerTextUsed: () => void;
+  }) => (
+    <div data-testid="design-chat-slot">
+      <output data-testid="composer-text">{composerText ?? ''}</output>
+      <button type="button" aria-label="use composer text" onClick={onComposerTextUsed} />
+    </div>
+  ),
+}));
+
 jest.mock('../api/client', () => ({
   ...jest.requireActual('../api/client'),
   designApi: {
@@ -142,10 +159,10 @@ beforeEach(() => {
 
 function LocationProbe() {
   const location = useLocation();
-  return <output data-testid="location">{location.pathname}</output>;
+  return <output data-testid="location">{`${location.pathname}${location.search}`}</output>;
 }
 
-function renderWorkspace(overrides: Partial<DesignProjectDetail> = {}) {
+function renderWorkspace(overrides: Partial<DesignProjectDetail> = {}, path = '/design/prj_abc') {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
     logger: { log: () => undefined, warn: () => undefined, error: () => undefined },
@@ -153,7 +170,7 @@ function renderWorkspace(overrides: Partial<DesignProjectDetail> = {}) {
   return render(
     <QueryClientProvider client={client}>
       <JotaiProvider>
-        <MemoryRouter initialEntries={['/design/prj_abc']}>
+        <MemoryRouter initialEntries={[path]}>
           <DesignWorkspace project={{ ...project, ...overrides }} me={me} />
           <LocationProbe />
         </MemoryRouter>
@@ -383,12 +400,27 @@ describe('workspace files', () => {
     );
   });
 
-  it('shows the design system of the project', async () => {
+  it('links the design system to the gallery in the context of the project', async () => {
     renderWorkspace();
     expect(await screen.findByRole('link', { name: 'Design system: Etus' })).toHaveAttribute(
       'href',
-      '/design/systems/etus',
+      '/design/systems?project=prj_abc',
     );
+  });
+
+  it('hands the apply request from the gallery to the chat and clears the url', async () => {
+    api.getDesignSystem.mockImplementation(async (id: string) =>
+      id === 'airbnb' ? { id: 'airbnb', name: 'Airbnb' } : { id: 'etus', name: 'Etus' },
+    );
+    renderWorkspace({}, '/design/prj_abc?applyDesignSystem=airbnb&tab=x');
+    await waitFor(() =>
+      expect(screen.getByTestId('composer-text')).toHaveTextContent(
+        'Apply the design system Airbnb',
+      ),
+    );
+    expect(screen.getByTestId('location')).toHaveTextContent('/design/prj_abc?tab=x');
+    await userEvent.click(screen.getByRole('button', { name: 'use composer text' }));
+    expect(screen.getByTestId('composer-text')).toHaveTextContent('');
   });
 });
 

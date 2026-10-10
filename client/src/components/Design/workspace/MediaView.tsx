@@ -63,7 +63,7 @@ export default function MediaView({
             <a
               href={url}
               download={name}
-              className="inline-flex items-center gap-2 rounded-lg border border-border-medium px-3 py-1.5 text-sm text-text-primary hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
+              className="inline-flex items-center gap-2 rounded-lg border border-border-medium px-3 py-1.5 text-sm text-text-primary no-underline hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
             >
               <Download className="size-4" aria-hidden="true" />
               {localize('workspace.file.download')}

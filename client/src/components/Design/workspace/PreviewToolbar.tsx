@@ -133,7 +133,7 @@ export default function PreviewToolbar({
             referrerPolicy="no-referrer"
             aria-label={localize('workspace.preview.open_tab')}
             title={localize('workspace.preview.open_tab')}
-            className={toolbarButton}
+            className={cn(toolbarButton, 'no-underline')}
           >
             <ExternalLink className="size-4" aria-hidden="true" />
           </a>

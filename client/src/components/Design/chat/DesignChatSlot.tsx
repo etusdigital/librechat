@@ -5,6 +5,8 @@ import { useDesignLocalize } from '../i18n';
 export interface DesignChatSlotProps {
   project: DesignProjectDetail;
   me: DesignMe;
+  composerText: string | null;
+  onComposerTextUsed: () => void;
 }
 
 export function useDesignChatResponding() {

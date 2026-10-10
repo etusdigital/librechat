@@ -97,7 +97,8 @@
       "resize_chat": "Resize the chat"
     },
     "chat": {
-      "placeholder": "The chat with the Etus Design agent shows up here."
+      "placeholder": "The chat with the Etus Design agent shows up here.",
+      "apply_design_system": "Apply the design system {{name}}"
     },
     "header": {
       "name_label": "Project name",
@@ -118,7 +119,8 @@
       "delete_description": "The project {{name}} goes away for everyone. To confirm, type the project name.",
       "delete_name": "Project name to confirm",
       "delete_confirm": "Delete project",
-      "delete_error": "Could not delete the project."
+      "delete_error": "Could not delete the project.",
+      "design_system_change": "Change the design system"
     },
     "tabs": {
       "label": "Open files",

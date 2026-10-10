@@ -35,6 +35,16 @@ const SHARED_RESOURCES = [
     toFilter: (ids) => ({ serverName: { $in: ids } }),
     optionOf: (doc) => doc.serverName,
   },
+  {
+    key: 'skills',
+    resourceType: ResourceType.SKILL,
+    accessRoleId: AccessRoleIds.SKILL_VIEWER,
+    model: 'Skill',
+    toFilter: (ids) => ({
+      _id: { $in: ids.filter((id) => mongoose.Types.ObjectId.isValid(id)) },
+    }),
+    optionOf: (doc) => doc._id.toString(),
+  },
 ];
 
 const SHARED_TYPES = SHARED_RESOURCES.map((resource) => resource.resourceType);

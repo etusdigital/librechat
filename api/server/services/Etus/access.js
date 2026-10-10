@@ -4,9 +4,18 @@ const { fetchUserSettings, isHubEnabled } = require('./hubClient');
 const { readUserSettings, writeUserSettings } = require('./settingsCache');
 const { memberKeyOf, syncHubGroups } = require('./groups');
 const { syncRouterModels } = require('./routerModels');
+const { syncHubSkills } = require('./skillActivation');
 const db = require('~/models');
 
-const SETTING_KEYS = ['model', 'temperature', 'systemPrompt', 'prompts', 'agents', 'mcpServers'];
+const SETTING_KEYS = [
+  'model',
+  'temperature',
+  'systemPrompt',
+  'prompts',
+  'agents',
+  'mcpServers',
+  'skills',
+];
 
 function sanitizeValues(values) {
   const result = {};
@@ -59,6 +68,7 @@ async function syncHubRole(userId, answer) {
 async function applyHubAnswer({ userId, memberKey, authUserId, answer, background }) {
   const active = answer.active === true;
   const groups = active ? answer.groups : [];
+  const values = active ? sanitizeValues(answer.values) : {};
   await syncHubGroups({ _id: userId, idOnTheSource: memberKey }, groups);
   await writeUserSettings(
     userId,
@@ -67,12 +77,13 @@ async function applyHubAnswer({ userId, memberKey, authUserId, answer, backgroun
       memberKey,
       version: answer.version ?? null,
       organizationId: answer.organization?.id ?? null,
-      values: active ? sanitizeValues(answer.values) : {},
+      values,
       fetchedAt: Date.now(),
     },
     { background },
   );
   await syncHubRole(userId, answer);
+  await syncHubSkills(userId, values);
 }
 
 async function refreshHubAccess({ userId, memberKey, authUserId, background = false }) {

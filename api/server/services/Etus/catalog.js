@@ -11,6 +11,7 @@ const db = require('~/models');
 
 const MAX_OPTIONS = 2000;
 const MAX_OPTION_TEXT = 200;
+const MAX_OPTION_DESCRIPTION = 280;
 const SYSTEM_PROMPT_MAX_LENGTH = 8000;
 const NON_CHAT_ENDPOINTS = new Set([
   EModelEndpoint.assistants,
@@ -28,7 +29,11 @@ function toOptions(items) {
       continue;
     }
     seen.add(item.id);
-    options.push({ id: String(item.id), label: clip(item.label) });
+    const option = { id: String(item.id), label: clip(item.label) };
+    if (typeof item.description === 'string' && item.description.trim()) {
+      option.description = item.description.trim().slice(0, MAX_OPTION_DESCRIPTION);
+    }
+    options.push(option);
     if (options.length >= MAX_OPTIONS) {
       break;
     }
@@ -66,7 +71,14 @@ function modelOptions(modelSpecs, models) {
   return [...toOptions(specs), ...toOptions(plain)].slice(0, MAX_OPTIONS);
 }
 
-function buildCatalog({ promptGroups = [], agents = [], mcpServers = [], modelSpecs, models }) {
+function buildCatalog({
+  promptGroups = [],
+  agents = [],
+  mcpServers = [],
+  skills = [],
+  modelSpecs,
+  models,
+}) {
   return {
     fields: [
       {
@@ -118,6 +130,20 @@ function buildCatalog({ promptGroups = [], agents = [], mcpServers = [], modelSp
           mcpServers.map((server) => ({ id: server.name, label: server.title || server.name })),
         ),
       },
+      {
+        key: 'skills',
+        label: 'Skills',
+        description:
+          'Skills compartilhadas e ativadas para quem recebe esta configuração. As skills dos agentes marcados em Agentes já entram sozinhas.',
+        kind: 'multi',
+        options: toOptions(
+          skills.map((skill) => ({
+            id: String(skill._id),
+            label: skill.displayTitle || skill.name,
+            description: skill.description,
+          })),
+        ),
+      },
     ],
   };
 }
@@ -128,11 +154,11 @@ async function catalogResourceFilter(resourceType, adminIds) {
 }
 
 async function collectCatalog({ appConfig, loadModels }) {
-  const { User, PromptGroup, Agent, MCPServer } = mongoose.models;
+  const { User, PromptGroup, Agent, MCPServer, Skill } = mongoose.models;
   const admins = await User.find({ role: SystemRoles.ADMIN }, { _id: 1 }).lean();
   const adminIds = admins.map((admin) => admin._id);
 
-  const [promptGroups, agents, dbServers] = await Promise.all([
+  const [promptGroups, agents, dbServers, skills] = await Promise.all([
     PromptGroup.find(await catalogResourceFilter(ResourceType.PROMPTGROUP, adminIds), {
       name: 1,
     }).lean(),
@@ -144,6 +170,13 @@ async function collectCatalog({ appConfig, loadModels }) {
       ? MCPServer.find(await catalogResourceFilter(ResourceType.MCPSERVER, adminIds), {
           serverName: 1,
           'config.title': 1,
+        }).lean()
+      : [],
+    Skill
+      ? Skill.find(await catalogResourceFilter(ResourceType.SKILL, adminIds), {
+          name: 1,
+          displayTitle: 1,
+          description: 1,
         }).lean()
       : [],
   ]);
@@ -171,6 +204,7 @@ async function collectCatalog({ appConfig, loadModels }) {
     promptGroups,
     agents,
     mcpServers,
+    skills,
     modelSpecs: appConfig?.modelSpecs,
     models: usableModels(models, appConfig?.endpoints?.custom),
   });

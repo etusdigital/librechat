@@ -1,6 +1,6 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-
+import { addDesignLocales } from '~/components/Design/i18n';
 import translationEn from './en/translation.json';
 
 export const defaultNS = 'translation';
@@ -304,6 +304,8 @@ export const i18nInitPromise = i18n.use(initReactI18next).init({
   react: { useSuspense: false },
   interpolation: { escapeValue: false },
 });
+
+addDesignLocales(i18n);
 
 export async function changeLanguageSafely(locale?: string | null) {
   const requestId = ++languageRequestId;

@@ -5,6 +5,7 @@ import { useParams } from 'react-router-dom';
 import { useMediaQuery } from '@librechat/client';
 import type { ReactNode } from 'react';
 import type { DesignMe, DesignProjectDetail } from '../api/types';
+import type { WorkspaceTab } from './workspace-tabs';
 import type { MobileTab } from './MobileTabBar';
 import {
   closeTab,
@@ -22,6 +23,7 @@ import MobileTabBar, { MOBILE_TAB_PANEL_IDS } from './MobileTabBar';
 import { useIsResponding } from '../chat/DesignChatAdapter';
 import DesignAccessGate from '../common/DesignAccessGate';
 import { useProjectChanges } from './use-project-changes';
+import { WorkspaceTabsProvider } from './workspace-tabs';
 import { usePendingBrief } from '../state/pending-brief';
 import DesignChatSlot from '../chat/DesignChatSlot';
 import ChatResizeHandle from './ChatResizeHandle';
@@ -127,10 +129,19 @@ export function DesignWorkspace({ project, me }: { project: DesignProjectDetail;
     />
   );
 
+  const focusTab = useCallback(
+    (tab: WorkspaceTab) => {
+      if (compact) {
+        setMobileTab(tab);
+      }
+    },
+    [compact],
+  );
+
   const showChat = !compact || mobileTab === 'chat';
   const showWorkspace = !compact || mobileTab === 'preview';
 
-  return (
+  const workspace = (
     <main
       data-testid="design-workspace"
       data-layout={compact ? 'compact' : 'split'}
@@ -224,6 +235,8 @@ export function DesignWorkspace({ project, me }: { project: DesignProjectDetail;
       </div>
     </main>
   );
+
+  return <WorkspaceTabsProvider onFocus={focusTab}>{workspace}</WorkspaceTabsProvider>;
 }
 
 function GatedPage({ children }: { children: ReactNode }) {

@@ -102,3 +102,26 @@ ETUS_DESIGN_BRIDGE_JS=../etus-design/design-service/src/preview/bridge/bridge.js
 ```
 
 `C8_BASE_URL` troca o endereço do LibreChat e `C8_SCREENSHOTS` guarda as capturas numa pasta.
+
+## `e2e/draw/`
+
+E2e local do modo Desenhar (pacote C9). Usa o mesmo LibreChat de produção, o modelo falso e o agente do `e2e/chat/`, com o modelo falso em outra porta (`librechat.e2e.yaml` desta pasta aponta para `127.0.0.1:4809`). O design-service e o renderer são simulados pelo Playwright: `POST /projects/:id/screenshots` devolve um job `queued`, `GET /jobs/:id` passa por `running` e termina em `succeeded` na segunda consulta, e `/preview/d/*` entrega um PNG de 1170x2532 (celular com escala 3) gerado pelo próprio Chromium. A prévia usa o `bridge.js` real do repositório `etus-design`, para o `etus:ready` chegar.
+
+Confere: entrar em Desenhar recarrega a prévia rolada e ela volta ao topo; o canvas cobre o dispositivo no zoom atual; desenhar, trocar cor e desfazer; o pedido de screenshot com o dispositivo atual e sem página inteira; a espera do job; o download sem cookie; o composer com o texto escrito e a linha "Veja as marcações na imagem e ajuste o arquivo index.html."; o upload pelo LibreChat; o modelo recebendo o texto e uma imagem, com a marcação azul no lugar desenhado e a captura em volta; em 390x844, no tema escuro, sem rolagem horizontal e com a aba Chat aberta depois de anexar.
+
+```sh
+docker run -d --rm --name c9-e2e-mongo -p 127.0.0.1:27189:27017 mongo:8.0
+npm run build:packages && npm run build:client
+```
+
+`.env` local como o do `e2e/chat/`, com `PORT=3189`, `MONGO_URI=mongodb://127.0.0.1:27189/LibreChatC9`, `DOMAIN_CLIENT` e `DOMAIN_SERVER` em `http://localhost:3189` e `CONFIG_PATH` apontando para `config/etus/e2e/draw/librechat.e2e.yaml`.
+
+```sh
+FAKE_LLM_PORT=4809 node config/etus/e2e/chat/fake-llm.mjs &
+NODE_ENV=production node api/server/index.js &
+node config/etus/e2e/draw/draw.mjs register
+node config/etus/seed-design-agent.js --file config/etus/e2e/chat/agent.json --author-email designer.c9@example.com
+ETUS_DESIGN_BRIDGE_JS=../etus-design/design-service/src/preview/bridge/bridge.js node config/etus/e2e/draw/draw.mjs
+```
+
+O modelo falso também guarda as imagens recebidas (`GET /__images`). As capturas ficam em `C9_SCREENSHOTS`, quando definido.

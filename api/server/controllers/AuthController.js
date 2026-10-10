@@ -29,6 +29,7 @@ const {
 } = require('~/models');
 const { getGraphApiToken } = require('~/server/services/GraphTokenService');
 const { getRefreshTokenBridge } = require('~/server/services/RefreshTokenBridge');
+const { syncRouterModels } = require('~/server/services/Etus/routerModels');
 const {
   recoverOpenIDRefreshBridge,
   refreshOpenIDUser,
@@ -490,6 +491,7 @@ const refreshController = async (req, res) => {
           delete req.session.openidTokens;
         }
 
+        void syncRouterModels(user._id.toString(), tokenset?.id_token);
         const token = await sendOpenIDAuthResponse({
           tokenset,
           user,

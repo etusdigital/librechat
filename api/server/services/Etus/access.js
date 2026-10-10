@@ -3,6 +3,7 @@ const { SystemRoles } = require('librechat-data-provider');
 const { fetchUserSettings, isHubEnabled } = require('./hubClient');
 const { readUserSettings, writeUserSettings } = require('./settingsCache');
 const { memberKeyOf, syncHubGroups } = require('./groups');
+const { syncRouterModels } = require('./routerModels');
 const db = require('~/models');
 
 const SETTING_KEYS = ['model', 'temperature', 'systemPrompt', 'prompts', 'agents', 'mcpServers'];
@@ -87,7 +88,7 @@ async function refreshHubAccess({ userId, memberKey, authUserId, background = fa
   return true;
 }
 
-async function syncHubAccess(user) {
+async function syncHubSettings(user) {
   try {
     if (!isHubEnabled() || !user?._id || !user.openidId) {
       return false;
@@ -101,6 +102,14 @@ async function syncHubAccess(user) {
     logger.warn(`[EtusHub] Access sync failed: ${error?.message ?? error}`);
     return false;
   }
+}
+
+async function syncHubAccess(user, idToken) {
+  const [synced] = await Promise.all([
+    syncHubSettings(user),
+    syncRouterModels(user?._id?.toString(), idToken),
+  ]);
+  return synced;
 }
 
 async function getCachedHubValues(userId) {

@@ -821,7 +821,7 @@ async function processOpenIDAuth(tokenset, existingUsersOnly = false) {
   }
 
   user = await updateUser(user._id, user);
-  await syncHubAccess(user);
+  await syncHubAccess(user, tokenset.id_token);
 
   logger.info(
     `[openidStrategy] login success openidId: ${user.openidId} | email: ${user.email} | username: ${user.username} `,

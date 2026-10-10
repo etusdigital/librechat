@@ -4,6 +4,8 @@ const { standardCache } = require('@librechat/api');
 const NAMESPACE = 'ETUS_HUB_SETTINGS';
 const ENTRY_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const SEEN_WINDOW_MS = 24 * 60 * 60 * 1000;
+const MODELS_TTL_MS = 12 * 60 * 60 * 1000;
+const modelsKey = (userId) => `models:${userId}`;
 
 let store;
 const seenUsers = new Map();
@@ -56,6 +58,26 @@ async function writeUserSettings(userId, entry, { background = false } = {}) {
   }
 }
 
+async function readUserModels(userId) {
+  if (!userId) {
+    return null;
+  }
+  try {
+    return (await getStore().get(modelsKey(userId))) ?? null;
+  } catch (error) {
+    logger.warn(`[EtusRouter] Model cache read failed: ${error?.message ?? error}`);
+    return null;
+  }
+}
+
+async function writeUserModels(userId, entry) {
+  try {
+    await getStore().set(modelsKey(userId), entry, MODELS_TTL_MS);
+  } catch (error) {
+    logger.warn(`[EtusRouter] Model cache write failed: ${error?.message ?? error}`);
+  }
+}
+
 function recentlySeenUsers(now = Date.now()) {
   const users = [];
   for (const [userId, seen] of seenUsers) {
@@ -76,6 +98,8 @@ function resetSettingsCache() {
 module.exports = {
   readUserSettings,
   writeUserSettings,
+  readUserModels,
+  writeUserModels,
   recentlySeenUsers,
   resetSettingsCache,
 };

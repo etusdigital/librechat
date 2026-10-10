@@ -3,6 +3,7 @@ import http from 'node:http';
 const PORT = Number(process.env.FAKE_LLM_PORT ?? 4799);
 const CHUNK_MS = Number(process.env.FAKE_LLM_CHUNK_MS ?? 300);
 const requests = [];
+const images = [];
 
 const textOf = (message) => {
   if (!message) {
@@ -16,14 +17,24 @@ const textOf = (message) => {
     .join('\n');
 };
 
+const imageUrlsOf = (message) =>
+  Array.isArray(message?.content)
+    ? message.content
+        .filter((part) => part.type === 'image_url')
+        .map((part) => part.image_url?.url ?? part.image_url)
+    : [];
+
 function summarize(body) {
   const users = (body.messages ?? []).filter((message) => message.role === 'user');
+  const lastImages = imageUrlsOf(users[users.length - 1]);
+  images.push(...lastImages);
   return {
     model: body.model,
     firstLine: textOf(users[0]).split('\n')[0],
     first: textOf(users[0]),
     last: textOf(users[users.length - 1]),
     userMessages: users.length,
+    lastImages: lastImages.length,
   };
 }
 
@@ -60,6 +71,11 @@ http
       raw += part;
     });
     req.on('end', async () => {
+      if (req.url === '/__images') {
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end(JSON.stringify(images));
+        return;
+      }
       if (req.url === '/__requests') {
         res.writeHead(200, { 'content-type': 'application/json' });
         res.end(JSON.stringify(requests));

@@ -55,6 +55,29 @@ function LeaveEmbeddedChat({ navigateOuter }: { navigateOuter: (to: string) => v
   return null;
 }
 
+const currentHref = () =>
+  `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+function useKeepPageUrl() {
+  const location = useLocation();
+  const conversation = useRecoilValue(store.conversationByIndex(DESIGN_CHAT_INDEX));
+  const page = useRef<{ href: string; state: unknown } | null>(null);
+
+  useEffect(() => {
+    page.current = {
+      href: `${location.pathname}${location.search}${location.hash}`,
+      state: window.history.state,
+    };
+  }, [location.hash, location.pathname, location.search]);
+
+  useEffect(() => {
+    const saved = page.current;
+    if (saved && currentHref() !== saved.href) {
+      window.history.replaceState(saved.state, '', saved.href);
+    }
+  }, [conversation]);
+}
+
 export interface ChatPanelProps {
   agentId?: string;
   conversationId?: string | null;
@@ -80,6 +103,7 @@ export const ChatPanel = memo(function ChatPanel({
   const onLostRef = useRef(onConversationLost);
   onLostRef.current = onConversationLost;
   const leave = useCallback((to: string) => navigateOuterRef.current(to), []);
+  useKeepPageUrl();
 
   const [router] = useState(() =>
     createMemoryRouter(

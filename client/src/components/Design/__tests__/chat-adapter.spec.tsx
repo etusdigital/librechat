@@ -3,6 +3,7 @@ import { RecoilRoot, useRecoilState, useSetRecoilState } from 'recoil';
 import { act, render, renderHook, screen, waitFor } from '@testing-library/react';
 import {
   RouterProvider,
+  createBrowserRouter,
   createMemoryRouter,
   useLocation,
   useNavigate,
@@ -66,6 +67,20 @@ function Composer({ onSubmit }: { onSubmit: (text: string) => void }) {
     >
       <textarea id="prompt-textarea" defaultValue="" />
     </form>
+  );
+}
+
+function MirrorChatSettings() {
+  const setConversation = useSetRecoilState(store.conversationByIndex(0));
+  return (
+    <button
+      type="button"
+      aria-label="mirror"
+      onClick={() => {
+        window.history.replaceState({}, '', '/design/prj_abc?agent_id=agent_etus_design');
+        setConversation({ conversationId: 'new', endpoint: 'agents', title: null } as never);
+      }}
+    />
   );
 }
 
@@ -214,5 +229,29 @@ describe('ChatPanel', () => {
     const container = document.querySelector('[data-etus-design-chat]');
     expect(container?.className).toContain('[&_[data-testid=header-new-chat-button]]:hidden');
     expect(container?.className).toContain('[&_[data-testid=model-selector-button]]:hidden');
+  });
+
+  it('keeps the page url when the chat mirrors its settings into the address bar', async () => {
+    window.history.replaceState({ idx: 3 }, '', '/design/prj_abc?applyDesignSystem=airbnb');
+    const router = createBrowserRouter([
+      {
+        path: '/design/:projectId',
+        element: (
+          <>
+            <ChatPanel firstMessage="oi" />
+            <MirrorChatSettings />
+          </>
+        ),
+      },
+    ]);
+    render(
+      <RecoilRoot>
+        <RouterProvider router={router} />
+      </RecoilRoot>,
+    );
+    act(() => screen.getByRole('button', { name: 'mirror' }).click());
+    await waitFor(() => expect(window.location.search).toBe('?applyDesignSystem=airbnb'));
+    expect(window.location.pathname).toBe('/design/prj_abc');
+    expect(router.state.location.search).toBe('?applyDesignSystem=airbnb');
   });
 });

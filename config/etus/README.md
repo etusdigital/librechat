@@ -38,3 +38,15 @@ A definição é recusada se trouxer qualquer outra ferramenta: outro servidor M
 Remoção só acontece com `--prune-tools`. Mesmo assim, só saem as ferramentas que o seed gerencia (as nativas acima e as `design__*_mcp_etus`) e que não estão na definição. Ferramentas de outros servidores ou ligadas na tela fora dessa lista ficam. Se nenhuma ferramenta do servidor `etus` sobrar, `etus` sai de `mcpServerNames`.
 
 Rode antes com `--dry-run`: a saída mostra a diferença de cada campo e a linha `pruned tools` com o que sairia. Sem `--prune-tools`, o seed avisa quais ferramentas do agente não estão na definição.
+
+## `check-upstream-touchpoints.js`
+
+Confere que o fork só mexe no upstream onde é permitido (spec C, seção 3.1). Compara com o merge-base do upstream e falha se algum arquivo mudado ficar fora das pastas da Etus (`api/server/services/Etus/`, `api/server/routes/etus/`, `config/etus/`, `client/src/components/Design/`, `client/src/components/Etus/` e `client/src/locales/*/etus-design.json`) e da lista fechada de arquivos do upstream que está no próprio script.
+
+```sh
+node config/etus/check-upstream-touchpoints.js [--base <ref>] [--head <ref>]
+```
+
+Sem `--base`, usa `ETUS_UPSTREAM_REF` ou o primeiro que existir entre `upstream/main`, `origin/main` e `etus/main`. Sai com 0 quando está tudo dentro, 1 com a lista do que ficou fora e 2 quando não acha a referência. O teste `config/etus/__tests__/check-upstream-touchpoints.spec.js` roda a mesma conferência no repositório quando uma dessas referências existe (na CI, `npm run test:config`).
+
+A lista tem duas partes: os quatro pontos do Design (`client/src/routes/index.tsx`, `client/src/hooks/Nav/useSideNavLinks.ts`, `client/src/locales/i18n.ts` e `api/server/index.js`) e os arquivos que patches anteriores da Etus já tocavam. Arquivo novo na lista só entra com a mudança de spec que o aprova.

@@ -127,6 +127,10 @@ function isAgentSkillAuthoringEnabledForRun({
     }
     return ephemeralSkillsToggle === true;
   }
+  // Etus: an agent that reads curated skills can opt out of the skill-authoring tools explicitly.
+  if (agent.skill_authoring_enabled === false) {
+    return false;
+  }
   return agent.skills_enabled === true || agent.skill_authoring_enabled === true;
 }
 

@@ -1,12 +1,12 @@
-import { MemoryRouter } from 'react-router-dom';
 import { RecoilRoot } from 'recoil';
+import { MemoryRouter } from 'react-router-dom';
 import { Provider as JotaiProvider } from 'jotai';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { DesignMe, DesignProjectDetail, FileEntry } from '../api/types';
-import { modePanelLayout } from '../workspace/layout';
 import { DesignWorkspace } from '../workspace/DesignWorkspacePage';
+import { modePanelLayout } from '../workspace/layout';
 import { workspaceApi } from '../api/workspace';
 import { designApi } from '../api/client';
 

@@ -1,8 +1,8 @@
 import { MessageSquarePlus } from 'lucide-react';
 import type { WorkspaceModeExtension } from './types';
+import { composerPlacement } from '../comments/comment-placement';
 import CommentOverlay from '../comments/CommentOverlay';
 import CommentPanel from '../comments/CommentPanel';
-import { composerPlacement } from '../comments/comment-placement';
 
 export const commentMode: WorkspaceModeExtension = {
   mode: 'comment',

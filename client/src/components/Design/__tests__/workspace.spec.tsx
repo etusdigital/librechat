@@ -1,5 +1,5 @@
-import userEvent from '@testing-library/user-event';
 import { RecoilRoot } from 'recoil';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { createStore, Provider as JotaiProvider } from 'jotai';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

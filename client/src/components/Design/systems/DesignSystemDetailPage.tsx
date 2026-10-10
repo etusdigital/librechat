@@ -61,7 +61,7 @@ function SystemHeader({ system, me }: { system: DesignSystemDetail; me: DesignMe
               href={upstream}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 underline underline-offset-2 hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
+              className="inline-flex items-center gap-1 text-text-secondary underline underline-offset-2 hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
             >
               {localize('systems.attribution_upstream')}
               <ExternalLink className="size-3" aria-hidden="true" />

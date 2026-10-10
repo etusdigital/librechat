@@ -26,12 +26,15 @@ export default function DesignSystemCard({
         aria-describedby={detailsId}
         data-system-id={system.id}
         className={cn(
-          'group flex h-full flex-col overflow-hidden rounded-2xl border bg-surface-secondary transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary focus-visible:ring-offset-2 focus-visible:ring-offset-presentation',
+          'group flex h-full flex-col overflow-hidden rounded-2xl border bg-surface-secondary no-underline transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary focus-visible:ring-offset-2 focus-visible:ring-offset-presentation',
           featured ? 'border-border-heavy md:flex-row' : 'border-border-light',
         )}
       >
         <div
-          className={cn('shrink-0', featured ? 'md:w-1/2 md:border-r md:border-border-light' : '')}
+          className={cn(
+            'shrink-0',
+            featured ? 'md:w-80 md:border-r md:border-border-light lg:w-96' : '',
+          )}
         >
           <SystemThumbnail system={system} />
         </div>

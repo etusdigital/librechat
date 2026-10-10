@@ -58,12 +58,22 @@ function SystemOption({
           <span className="flex min-w-0 items-center gap-2">
             <span className="truncate text-sm font-semibold text-text-primary">{system.name}</span>
             {isDefault ? (
-              <span className="shrink-0 rounded-full border border-border-medium px-1.5 text-[11px] text-text-secondary">
+              <span
+                className={cn(
+                  'shrink-0 rounded-full border border-border-medium px-1.5 text-[11px]',
+                  selected ? 'text-text-primary' : 'text-text-secondary',
+                )}
+              >
                 {localize('home.system_default')}
               </span>
             ) : null}
           </span>
-          <span className="truncate text-xs text-text-secondary">
+          <span
+            className={cn(
+              'truncate text-xs',
+              selected ? 'text-text-primary' : 'text-text-secondary',
+            )}
+          >
             {system.inspiredBy
               ? `${system.category} · ${localize('home.system_inspired_by', { brand: system.inspiredBy })}`
               : system.category}

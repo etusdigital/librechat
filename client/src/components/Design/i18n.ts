@@ -6,9 +6,13 @@ import designEn from '~/locales/en/etus-design.json';
 
 export const DESIGN_NAMESPACE = 'etus-design';
 
-export type DesignTranslationKey = keyof typeof designEn;
+type LeafKeys<T, Prefix extends string = ''> = {
+  [K in keyof T & string]: T[K] extends string ? `${Prefix}${K}` : LeafKeys<T[K], `${Prefix}${K}.`>;
+}[keyof T & string];
 
-const DESIGN_RESOURCES: Record<string, Record<DesignTranslationKey, string>> = {
+export type DesignTranslationKey = LeafKeys<typeof designEn>;
+
+const DESIGN_RESOURCES: Record<string, typeof designEn> = {
   en: designEn,
   'pt-BR': designPtBR,
 };

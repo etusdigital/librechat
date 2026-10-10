@@ -32,6 +32,7 @@ const SEEDED_FIELDS = [
   'skills',
   'skills_enabled',
   'skills_scope',
+  'skill_authoring_enabled',
   'conversation_starters',
   'category',
 ];
@@ -60,6 +61,7 @@ const AgentDefinitionSchema = z
       .refine((names) => new Set(names).size === names.length, 'must not repeat a skill'),
     skills_enabled: z.literal(true).default(true),
     skills_scope: z.literal('selected').default('selected'),
+    skill_authoring_enabled: z.literal(false).default(false),
     conversation_starters: z.array(nonEmpty).default([]),
     category: nonEmpty.default('general'),
     sourceCommit: z.string().optional(),
@@ -126,6 +128,7 @@ function buildAgentPayload(definition, skillIds) {
     skills: skillIds,
     skills_enabled: definition.skills_enabled,
     skills_scope: definition.skills_scope,
+    skill_authoring_enabled: definition.skill_authoring_enabled,
     conversation_starters: definition.conversation_starters,
     category: definition.category,
   };

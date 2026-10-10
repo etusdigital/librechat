@@ -194,7 +194,14 @@ describe('seed-design-agent', () => {
     expect(parseAgentDefinition(rest)).toMatchObject({
       skills_enabled: true,
       skills_scope: 'selected',
+      skill_authoring_enabled: false,
     });
+  });
+
+  it('never lets the curated agent author skills', () => {
+    expect(() => parseAgentDefinition(definition({ skill_authoring_enabled: true }))).toThrow(
+      'skill_authoring_enabled',
+    );
   });
 
   it('warns when the model differs from the recommended one', async () => {

@@ -8,15 +8,41 @@ const translate = i18n.t.bind(i18n) as unknown as (
   options?: Record<string, unknown>,
 ) => string;
 
+type Tree = { [key: string]: string | Tree };
+
+function flatten(tree: Tree, prefix = ''): [string, string][] {
+  return Object.entries(tree).flatMap(([key, value]) =>
+    typeof value === 'string'
+      ? [[`${prefix}${key}`, value] as [string, string]]
+      : flatten(value, `${prefix}${key}.`),
+  );
+}
+
 describe('etus-design namespace', () => {
   it('has the same keys in pt-BR and en', () => {
-    expect(Object.keys(designPtBR).sort()).toEqual(Object.keys(designEn).sort());
+    const keysOf = (tree: Tree) =>
+      flatten(tree)
+        .map(([key]) => key)
+        .sort();
+    expect(keysOf(designPtBR)).toEqual(keysOf(designEn));
   });
 
   it('never uses em or en dashes', () => {
-    for (const value of [...Object.values(designPtBR), ...Object.values(designEn)]) {
+    for (const [, value] of [...flatten(designPtBR), ...flatten(designEn)]) {
       expect(value).not.toMatch(/[–—]/);
     }
+  });
+
+  it('resolves the nested actions block', () => {
+    expect(translate('actions.share_title', { lng: 'pt-BR', ns: DESIGN_NAMESPACE })).toBe(
+      'Compartilhar',
+    );
+    expect(
+      translate('actions.share_public_days', { lng: 'pt-BR', ns: DESIGN_NAMESPACE, count: 1 }),
+    ).toBe('1 dia');
+    expect(
+      translate('actions.share_public_days', { lng: 'pt-BR', ns: DESIGN_NAMESPACE, count: 7 }),
+    ).toBe('7 dias');
   });
 
   it('is registered next to translation.json without replacing it', () => {

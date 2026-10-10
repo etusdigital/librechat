@@ -1,4 +1,5 @@
 import userEvent from '@testing-library/user-event';
+import { RecoilRoot } from 'recoil';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -67,15 +68,17 @@ function renderAt(path: string) {
     logger: { log: () => undefined, warn: () => undefined, error: () => undefined },
   });
   return render(
-    <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={[path]}>
-        <Routes>
-          <Route path="/design" element={<DesignHomePage />} />
-          <Route path="/design/systems" element={<DesignSystemsPage />} />
-          <Route path="/design/:projectId" element={<DesignWorkspacePage />} />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>,
+    <RecoilRoot>
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={[path]}>
+          <Routes>
+            <Route path="/design" element={<DesignHomePage />} />
+            <Route path="/design/systems" element={<DesignSystemsPage />} />
+            <Route path="/design/:projectId" element={<DesignWorkspacePage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    </RecoilRoot>,
   );
 }
 

@@ -119,7 +119,9 @@
       "delete_name": "Project name to confirm",
       "delete_confirm": "Delete project",
       "delete_error": "Could not delete the project.",
-      "design_system_change": "Change the design system"
+      "design_system_change": "Change the design system",
+      "sidebar_show": "Show the chat menu",
+      "sidebar_hide": "Hide the chat menu"
     },
     "tabs": {
       "label": "Open files",
@@ -173,6 +175,8 @@
       "mode": "Mode",
       "refresh": "Refresh preview",
       "open_tab": "Open in a new tab",
+      "panel_show": "Show the panel ({{mode}})",
+      "panel_hide": "Hide the panel ({{mode}})",
       "loading": "Loading the preview",
       "error": "Could not load the preview.",
       "frame_title": "Preview of {{path}}"

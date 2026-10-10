@@ -1,4 +1,5 @@
 import userEvent from '@testing-library/user-event';
+import { RecoilRoot } from 'recoil';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { createStore, Provider as JotaiProvider } from 'jotai';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -176,14 +177,16 @@ function renderWorkspace(overrides: Partial<DesignProjectDetail> = {}, path = '/
     logger: { log: () => undefined, warn: () => undefined, error: () => undefined },
   });
   return render(
-    <QueryClientProvider client={client}>
-      <JotaiProvider>
-        <MemoryRouter initialEntries={[path]}>
-          <DesignWorkspace project={{ ...project, ...overrides }} me={me} />
-          <LocationProbe />
-        </MemoryRouter>
-      </JotaiProvider>
-    </QueryClientProvider>,
+    <RecoilRoot>
+      <QueryClientProvider client={client}>
+        <JotaiProvider>
+          <MemoryRouter initialEntries={[path]}>
+            <DesignWorkspace project={{ ...project, ...overrides }} me={me} />
+            <LocationProbe />
+          </MemoryRouter>
+        </JotaiProvider>
+      </QueryClientProvider>
+    </RecoilRoot>,
   );
 }
 
@@ -421,13 +424,15 @@ describe('workspace files', () => {
     store.set(pendingBriefAtomFamily('prj_abc'), 'landing para pequenas empresas');
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
-      <QueryClientProvider client={client}>
-        <JotaiProvider store={store}>
-          <MemoryRouter initialEntries={['/design/prj_abc']}>
-            <DesignWorkspace project={project} me={me} />
-          </MemoryRouter>
-        </JotaiProvider>
-      </QueryClientProvider>,
+      <RecoilRoot>
+        <QueryClientProvider client={client}>
+          <JotaiProvider store={store}>
+            <MemoryRouter initialEntries={['/design/prj_abc']}>
+              <DesignWorkspace project={project} me={me} />
+            </MemoryRouter>
+          </JotaiProvider>
+        </QueryClientProvider>
+      </RecoilRoot>,
     );
     expect(screen.getByTestId('pending-brief')).toHaveTextContent('landing para pequenas empresas');
   });

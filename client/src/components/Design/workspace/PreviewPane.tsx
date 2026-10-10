@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useAtom } from 'jotai';
-import { Spinner } from '@librechat/client';
+import { X } from 'lucide-react';
+import { Spinner, useMediaQuery } from '@librechat/client';
 import type { ReactNode } from 'react';
 import type { DesignMe, DesignProjectDetail } from '../api/types';
 import { PREVIEW_REFERRER_POLICY, PREVIEW_SANDBOX } from '../preview/host-protocol';
@@ -12,10 +13,12 @@ import { availableModes, modeExtension } from './modes';
 import { designErrorMessageKey } from '../api/errors';
 import { isPreviewUrlFresh } from '../api/workspace';
 import { previewGeometry } from './preview-geometry';
+import { COMPACT_LAYOUT_QUERY, modePanelLayout } from './layout';
+import PreviewToolbar, { toolbarButton } from './PreviewToolbar';
 import { useElementSize } from './use-element-size';
-import PreviewToolbar from './PreviewToolbar';
 import { useDesignLocalize } from '../i18n';
 import DeviceFrame from './DeviceFrame';
+import { cn } from '~/utils';
 
 export default function PreviewPane({
   project,
@@ -41,9 +44,18 @@ export default function PreviewPane({
   const bridge = usePreviewBridge({ previewUrl: url, mode: extension.bridgeMode });
   const [loaded, setLoaded] = useState(false);
   const [stageRef, area] = useElementSize<HTMLDivElement>();
+  const [rowRef, row] = useElementSize<HTMLDivElement>();
+  const compact = useMediaQuery(COMPACT_LAYOUT_QUERY);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const panelId = useId();
   const geometry = previewGeometry(device, zoom, area);
-  const { reload } = bridge;
+  const { reload, subscribe } = bridge;
   const { refetch, data } = previewUrl;
+  const { Overlay, Panel, opensPanelOn } = extension;
+  const panelLayout = modePanelLayout(compact, row.width);
+  const drawer = Panel != null && panelLayout === 'drawer';
+  const geometryRef = useRef(geometry);
+  geometryRef.current = geometry;
 
   const refresh = useCallback(() => {
     if (isPreviewUrlFresh(data)) {
@@ -72,8 +84,23 @@ export default function PreviewPane({
     }
   }, [extension.mode, mode, setMode]);
 
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [extension.mode]);
+
+  useEffect(() => {
+    if (!drawer || !opensPanelOn) {
+      return;
+    }
+    return subscribe((message) => {
+      if (message.type === 'etus:target' && opensPanelOn(message, geometryRef.current)) {
+        setDrawerOpen(true);
+      }
+    });
+  }, [drawer, opensPanelOn, subscribe]);
+
   const context = { project, me, path, device, geometry, bridge };
-  const { Overlay, Panel } = extension;
+  const modeLabel = localize(extension.labelKey);
 
   let stage: ReactNode;
   if (previewUrl.isLoading) {
@@ -138,17 +165,60 @@ export default function PreviewPane({
         onZoom={setZoom}
         onMode={setMode}
         onRefresh={refresh}
+        panel={
+          drawer
+            ? {
+                open: drawerOpen,
+                controls: panelId,
+                label: localize(
+                  drawerOpen ? 'workspace.preview.panel_hide' : 'workspace.preview.panel_show',
+                  { mode: modeLabel },
+                ),
+                onToggle: () => setDrawerOpen((open) => !open),
+              }
+            : undefined
+        }
       />
-      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+      <div
+        ref={rowRef}
+        data-testid="design-preview-area"
+        className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden md:flex-row"
+      >
         <div
           ref={stageRef}
           data-testid="design-preview-stage"
-          className="flex min-h-0 min-w-0 flex-1 overflow-auto bg-surface-secondary p-3 md:p-4"
+          className="relative isolate flex min-h-0 min-w-0 flex-1 overflow-auto overscroll-contain bg-surface-secondary p-3 md:p-4"
         >
           {stage}
         </div>
         {Panel ? (
-          <aside className="max-h-[45%] min-h-0 shrink-0 overflow-auto border-t border-border-light md:max-h-none md:w-80 md:border-l md:border-t-0">
+          <aside
+            id={panelId}
+            aria-label={modeLabel}
+            data-testid="design-mode-panel"
+            data-layout={panelLayout}
+            hidden={drawer && !drawerOpen}
+            className={cn(
+              'min-h-0 overflow-auto bg-presentation',
+              panelLayout === 'stacked' && 'max-h-[45%] shrink-0 border-t border-border-light',
+              panelLayout === 'side' && 'w-80 shrink-0 border-l border-border-light',
+              drawer &&
+                'absolute inset-y-0 right-0 z-20 w-80 max-w-[calc(100%-3rem)] border-l border-border-light shadow-xl',
+            )}
+          >
+            {drawer ? (
+              <div className="flex items-center justify-end border-b border-border-light px-2 py-1">
+                <button
+                  type="button"
+                  aria-label={localize('workspace.preview.panel_hide', { mode: modeLabel })}
+                  title={localize('workspace.preview.panel_hide', { mode: modeLabel })}
+                  onClick={() => setDrawerOpen(false)}
+                  className={toolbarButton}
+                >
+                  <X className="size-4" aria-hidden="true" />
+                </button>
+              </div>
+            ) : null}
             <Panel {...context} />
           </aside>
         ) : null}

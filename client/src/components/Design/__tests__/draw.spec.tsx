@@ -1,4 +1,5 @@
 import { MemoryRouter } from 'react-router-dom';
+import { RecoilRoot } from 'recoil';
 import { Provider as JotaiProvider } from 'jotai';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -211,13 +212,15 @@ function renderWorkspace(overrides: Partial<DesignProjectDetail> = {}) {
     logger: { log: () => undefined, warn: () => undefined, error: () => undefined },
   });
   return render(
-    <QueryClientProvider client={client}>
-      <JotaiProvider>
-        <MemoryRouter initialEntries={['/design/prj_abc']}>
-          <DesignWorkspace project={{ ...project, ...overrides }} me={me} />
-        </MemoryRouter>
-      </JotaiProvider>
-    </QueryClientProvider>,
+    <RecoilRoot>
+      <QueryClientProvider client={client}>
+        <JotaiProvider>
+          <MemoryRouter initialEntries={['/design/prj_abc']}>
+            <DesignWorkspace project={{ ...project, ...overrides }} me={me} />
+          </MemoryRouter>
+        </JotaiProvider>
+      </QueryClientProvider>
+    </RecoilRoot>,
   );
 }
 

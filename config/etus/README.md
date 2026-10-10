@@ -50,3 +50,17 @@ node config/etus/check-upstream-touchpoints.js [--base <ref>] [--head <ref>]
 Sem `--base`, usa `ETUS_UPSTREAM_REF` ou o primeiro que existir entre `upstream/main`, `origin/main` e `etus/main`. Sai com 0 quando está tudo dentro, 1 com a lista do que ficou fora e 2 quando não acha a referência. O teste `config/etus/__tests__/check-upstream-touchpoints.spec.js` roda a mesma conferência no repositório quando uma dessas referências existe (na CI, `npm run test:config`).
 
 A lista tem duas partes: os quatro pontos do Design (`client/src/routes/index.tsx`, `client/src/hooks/Nav/useSideNavLinks.ts`, `client/src/locales/i18n.ts` e `api/server/index.js`) e os arquivos que patches anteriores da Etus já tocavam. Arquivo novo na lista só entra com a mudança de spec que o aprova.
+
+## `e2e/design-home/`
+
+E2e local da tela inicial do Design (pacote C4): cria um projeto pelo diálogo de novo projeto e confere a grade, a miniatura e o layout em 390x844 nos temas claro e escuro.
+
+O teste sobe, cada um no seu processo: MongoDB num container Docker, um hub simulado (JWKS, troca de token de repasse e leituras de permissão), o design-service real do repositório `etus-design`, o proxy real `/api/etus/design` com uma sessão OpenID simulada e o LibreChat com o `client/dist`. O navegador usa a sessão local do LibreChat; as chamadas a `/api/etus/design/*` e `/preview/*` são repassadas ao proxy e à prévia do design-service, porque o LibreChat local não tem id token do Logto.
+
+```sh
+npm run build:packages && npm run build:client
+(cd ../etus-design && pnpm install --frozen-lockfile)
+ETUS_DESIGN_DIR=../etus-design npx playwright test -c config/etus/e2e/design-home/playwright.config.js
+```
+
+As capturas ficam em `$TMPDIR/etus-design-home-e2e-screens` (ou em `E2E_SCREENSHOT_DIR`) e os logs de cada processo numa pasta temporária indicada ao fim da execução.

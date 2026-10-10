@@ -1,0 +1,15 @@
+# ETUS apps through the hub MCP gateway. Copy the `etus` entry under `mcpServers`
+# in librechat.yaml, set ETUS_HUB_MCP_SERVERS=etus and ETUS_HUB_MCP_KEY (see .env.example).
+# requiresOAuth: false keeps LibreChat from switching to per-person OAuth when it finds the
+# hub's protected-resource metadata. Never add {{LIBRECHAT_BODY_*}} here: it makes every
+# tool call open a new connection.
+mcpServers:
+  etus:
+    type: streamable-http
+    url: https://apps.etus.io/mcp
+    title: Apps da Etus
+    requiresOAuth: false
+    initTimeout: 15000
+    headers:
+      Authorization: 'Bearer ${ETUS_HUB_MCP_KEY}'
+      X-Etus-Id-Token: '{{LIBRECHAT_OPENID_ID_TOKEN}}'

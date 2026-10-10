@@ -3,12 +3,12 @@ import { createGitHubRepoAdapter } from './github';
 const token = process.env.A0_GITHUB_TOKEN;
 const run = token ? it : it.skip;
 
-describe('A0 spike: skillSync adapter against the private evolution-foundation/etus-design', () => {
+describe('A0 spike: skillSync adapter against the private etusdigital/etus-design', () => {
   run('resolves the commit and lists files with a Bearer token', async () => {
     const adapter = createGitHubRepoAdapter({
       source: {
         id: 'etus-design',
-        owner: 'evolution-foundation',
+        owner: 'etusdigital',
         repo: 'etus-design',
         ref: 'main',
         paths: ['docs/specs'],

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import type { ProjectConversation } from '../api/types';
 import { isDesignApiError, isRetryableDesignError } from '../api/errors';
 import { designApi } from '../api/client';
 
@@ -41,34 +42,69 @@ export type ConversationResolution =
   | { status: 'resolving' }
   | ({ status: 'ready' } & ResolvedConversation);
 
-type ProjectOfConversation = (
-  conversationId: string,
+export interface ConversationLookup {
+  projectOf: (conversationId: string, signal?: AbortSignal) => Promise<{ projectId: string }>;
+  listConversations: (
+    projectId: string,
+    signal?: AbortSignal,
+  ) => Promise<{ items: ProjectConversation[] }>;
+}
+
+type StoredState = 'bound' | 'elsewhere' | 'unbound' | 'unknown';
+
+async function storedStateOf(
+  projectId: string,
+  stored: string,
+  lookup: ConversationLookup,
   signal?: AbortSignal,
-) => Promise<{ projectId: string }>;
+): Promise<StoredState> {
+  try {
+    const bound = await lookup.projectOf(stored, signal);
+    return bound.projectId === projectId ? 'bound' : 'elsewhere';
+  } catch (error) {
+    return isDesignApiError(error) && error.status === 404 ? 'unbound' : 'unknown';
+  }
+}
+
+async function latestBoundConversation(
+  projectId: string,
+  lookup: ConversationLookup,
+  signal?: AbortSignal,
+): Promise<string | null> {
+  try {
+    const response = await lookup.listConversations(projectId, signal);
+    const latest = response?.items?.[0]?.conversationId;
+    return typeof latest === 'string' && latest.length > 0 ? latest : null;
+  } catch {
+    return null;
+  }
+}
 
 export async function resolveProjectConversation(
   projectId: string,
   stored: string | null,
-  projectOf: ProjectOfConversation,
+  lookup: ConversationLookup,
   signal?: AbortSignal,
 ): Promise<ResolvedConversation> {
-  if (!stored) {
-    return { conversationId: null, needsBinding: false };
+  const state = stored ? await storedStateOf(projectId, stored, lookup, signal) : null;
+  if (stored && state && state !== 'elsewhere') {
+    return { conversationId: stored, needsBinding: state === 'unbound' };
   }
-  try {
-    const bound = await projectOf(stored, signal);
-    if (bound.projectId === projectId) {
-      return { conversationId: stored, needsBinding: false };
-    }
+  if (state === 'elsewhere') {
     forgetConversation(projectId);
-    return { conversationId: null, needsBinding: false };
-  } catch (error) {
-    if (isDesignApiError(error) && error.status === 404) {
-      return { conversationId: stored, needsBinding: true };
-    }
-    return { conversationId: stored, needsBinding: false };
   }
+  const latest = await latestBoundConversation(projectId, lookup, signal);
+  if (latest) {
+    storeConversation(projectId, latest);
+    return { conversationId: latest, needsBinding: false };
+  }
+  return { conversationId: null, needsBinding: false };
 }
+
+const serviceLookup: ConversationLookup = {
+  projectOf: (conversationId, signal) => designApi.projectOfConversation(conversationId, signal),
+  listConversations: (projectId, signal) => designApi.listProjectConversations(projectId, signal),
+};
 
 export function useProjectConversation(projectId: string): ConversationResolution {
   const [resolution, setResolution] = useState<ConversationResolution>({ status: 'resolving' });
@@ -79,7 +115,7 @@ export function useProjectConversation(projectId: string): ConversationResolutio
     resolveProjectConversation(
       projectId,
       readStoredConversation(projectId),
-      designApi.projectOfConversation,
+      serviceLookup,
       controller.signal,
     ).then((resolved) => {
       if (!controller.signal.aborted) {

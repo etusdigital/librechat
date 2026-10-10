@@ -49,6 +49,11 @@ export interface FileEntry {
   updatedBy: string;
 }
 
+export interface ProjectConversation {
+  conversationId: string;
+  updatedAt: string;
+}
+
 export interface DesignProjectDetail extends DesignProject {
   files: FileEntry[];
 }

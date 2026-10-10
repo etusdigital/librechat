@@ -127,6 +127,11 @@ export const designApi = {
       json: { conversationId },
     }),
 
+  listProjectConversations: (projectId: string, signal?: AbortSignal) =>
+    designJson<{ items: t.ProjectConversation[] }>(projectPath(projectId, 'conversations'), {
+      signal,
+    }),
+
   projectOfConversation: (conversationId: string, signal?: AbortSignal) =>
     designJson<t.DesignProject>(designPath('conversations', conversationId, 'project'), {
       signal,

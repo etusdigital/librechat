@@ -32,10 +32,24 @@ jest.mock('../chat/DesignChatAdapter', () => ({
 
 jest.mock('../api/client', () => ({
   ...jest.requireActual('../api/client'),
-  designApi: { projectOfConversation: jest.fn(), bindConversation: jest.fn() },
+  designApi: {
+    projectOfConversation: jest.fn(),
+    bindConversation: jest.fn(),
+    listProjectConversations: jest.fn(),
+  },
 }));
 
-const api = designApi as unknown as Record<'projectOfConversation' | 'bindConversation', jest.Mock>;
+const api = designApi as unknown as Record<
+  'projectOfConversation' | 'bindConversation' | 'listProjectConversations',
+  jest.Mock
+>;
+
+const bound = (...ids: string[]) => ({
+  items: ids.map((conversationId, index) => ({
+    conversationId,
+    updatedAt: new Date(Date.UTC(2026, 9, 10, 12, 0, ids.length - index)).toISOString(),
+  })),
+});
 
 const me: DesignMe = {
   sub: 's',
@@ -107,6 +121,7 @@ describe('DesignChatSlot', () => {
     mockChat.insertIntoComposer.mockReset().mockResolvedValue(true);
     api.projectOfConversation.mockReset();
     api.bindConversation.mockReset().mockResolvedValue(undefined);
+    api.listProjectConversations.mockReset().mockResolvedValue(bound());
     window.localStorage.clear();
   });
 
@@ -119,6 +134,7 @@ describe('DesignChatSlot', () => {
     );
     expect(store.get(pendingBriefAtomFamily(project.projectId))).toBeNull();
     expect(api.projectOfConversation).not.toHaveBeenCalled();
+    expect(api.listProjectConversations).toHaveBeenCalledWith('prj_abc', expect.any(AbortSignal));
   });
 
   it('uses the default text when there is no brief', async () => {
@@ -147,6 +163,64 @@ describe('DesignChatSlot', () => {
     expect(lastPanel().firstMessage).toBeNull();
     expect(api.projectOfConversation).toHaveBeenCalledWith('conv-9', expect.any(AbortSignal));
     expect(api.bindConversation).not.toHaveBeenCalled();
+    expect(api.listProjectConversations).not.toHaveBeenCalled();
+  });
+
+  it('resumes on another device the most recent conversation the service knows', async () => {
+    api.listProjectConversations.mockResolvedValue(bound('conv-7', 'conv-3'));
+    const { store } = renderSlot({}, 'pedido que não deve ser reenviado');
+    const panel = await screen.findByTestId('chat-panel');
+    expect(panel).toHaveAttribute('data-conversation', 'conv-7');
+    expect(lastPanel().firstMessage).toBeNull();
+    expect(store.get(pendingBriefAtomFamily(project.projectId))).toBe(
+      'pedido que não deve ser reenviado',
+    );
+    expect(readStoredConversation('prj_abc')).toBe('conv-7');
+    expect(api.projectOfConversation).not.toHaveBeenCalled();
+    expect(api.bindConversation).not.toHaveBeenCalled();
+  });
+
+  it('asks the service when the remembered conversation belongs to another project', async () => {
+    storeConversation('prj_abc', 'conv-9');
+    api.projectOfConversation.mockResolvedValue({ projectId: 'prj_other' });
+    api.listProjectConversations.mockResolvedValue(bound('conv-7'));
+    renderSlot();
+    const panel = await screen.findByTestId('chat-panel');
+    expect(panel).toHaveAttribute('data-conversation', 'conv-7');
+    expect(readStoredConversation('prj_abc')).toBe('conv-7');
+    expect(api.bindConversation).not.toHaveBeenCalled();
+  });
+
+  it('keeps starting a new conversation when the service has no list route', async () => {
+    api.listProjectConversations.mockRejectedValue(
+      new DesignApiError({ status: 404, code: 'not_found' }),
+    );
+    const { store } = renderSlot({}, 'landing com preços');
+    await screen.findByTestId('chat-panel');
+    expect(lastPanel().conversationId).toBeNull();
+    expect(lastPanel().firstMessage).toBe('[Projeto Etus Design]: prj_abc\n\nlanding com preços');
+    expect(store.get(pendingBriefAtomFamily(project.projectId))).toBeNull();
+    expect(readStoredConversation('prj_abc')).toBeNull();
+  });
+
+  it('ignores a list answer without conversations it can use', async () => {
+    api.listProjectConversations.mockResolvedValue({ items: [{ conversationId: '' }] });
+    renderSlot();
+    await screen.findByTestId('chat-panel');
+    expect(lastPanel().conversationId).toBeNull();
+    expect(lastPanel().firstMessage).toContain('[Projeto Etus Design]: prj_abc');
+  });
+
+  it('resumes the remembered conversation without binding when the service fails', async () => {
+    storeConversation('prj_abc', 'conv-9');
+    api.projectOfConversation.mockRejectedValue(
+      new DesignApiError({ status: 503, code: 'design_unavailable' }),
+    );
+    renderSlot();
+    const panel = await screen.findByTestId('chat-panel');
+    expect(panel).toHaveAttribute('data-conversation', 'conv-9');
+    expect(api.bindConversation).not.toHaveBeenCalled();
+    expect(api.listProjectConversations).not.toHaveBeenCalled();
   });
 
   it('binds again a remembered conversation the service does not know', async () => {
@@ -158,6 +232,7 @@ describe('DesignChatSlot', () => {
     const panel = await screen.findByTestId('chat-panel');
     expect(panel).toHaveAttribute('data-conversation', 'conv-9');
     await waitFor(() => expect(api.bindConversation).toHaveBeenCalledWith('prj_abc', 'conv-9'));
+    expect(api.listProjectConversations).not.toHaveBeenCalled();
   });
 
   it('starts over when the remembered conversation belongs to another project', async () => {
@@ -168,6 +243,7 @@ describe('DesignChatSlot', () => {
     expect(lastPanel().conversationId).toBeNull();
     expect(lastPanel().firstMessage).toContain('[Projeto Etus Design]: prj_abc');
     expect(readStoredConversation('prj_abc')).toBeNull();
+    expect(api.listProjectConversations).toHaveBeenCalledTimes(1);
   });
 
   it('opens a new project conversation when the chat loses the current one', async () => {

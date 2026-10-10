@@ -48,3 +48,22 @@ export function useUploadFilesMutation(projectId: string) {
     onSuccess: invalidate,
   });
 }
+
+export function useDuplicateProjectMutation(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (name: string) => workspaceApi.duplicateProject(projectId, name),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [...designKeys.all, 'projects'] }),
+  });
+}
+
+export function useDeleteProjectMutation(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (confirm: string) => workspaceApi.deleteProject(projectId, confirm),
+    onSuccess: () => {
+      queryClient.removeQueries({ queryKey: designKeys.project(projectId) });
+      queryClient.invalidateQueries({ queryKey: [...designKeys.all, 'projects'] });
+    },
+  });
+}

@@ -133,7 +133,6 @@ export function DesignWorkspace({ project, me }: { project: DesignProjectDetail;
     >
       <WorkspaceHeader
         project={project}
-        me={me}
         activePath={activePath}
         device={device}
         compact={compact}

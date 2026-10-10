@@ -1,41 +1,53 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Check, Palette, Pencil, X } from 'lucide-react';
+import { ArrowLeft, Check, Pencil, X } from 'lucide-react';
 import { Input, Spinner, useToastContext } from '@librechat/client';
 import type { FormEvent, KeyboardEvent } from 'react';
-import type { DesignMe, DesignProjectDetail } from '../api/types';
+import type { DesignProjectDetail } from '../api/types';
 import type { DeviceId } from '../state/atoms';
-import { useDesignSystemQuery, useUpdateDesignProjectMutation } from '../api/queries';
 import WorkspaceHeaderActions from './header/WorkspaceHeaderActions';
+import { useUpdateDesignProjectMutation } from '../api/queries';
+import DesignSystemControl from './header/DesignSystemControl';
 import OpenSidebar from '~/components/Chat/Menus/OpenSidebar';
-import { DESIGN_HOME_PATH, designSystemPath } from '../paths';
 import { designErrorMessageKey } from '../api/errors';
 import { NotificationSeverity } from '~/common';
+import { DESIGN_HOME_PATH } from '../paths';
 import { useDesignLocalize } from '../i18n';
+import { cn } from '~/utils';
 
 const NAME_MAX = 120;
 
 const iconButton =
   'flex size-9 shrink-0 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary';
 
-function ProjectName({ project }: { project: DesignProjectDetail }) {
+function ProjectName({
+  project,
+  editing,
+  setEditing,
+}: {
+  project: DesignProjectDetail;
+  editing: boolean;
+  setEditing: (editing: boolean) => void;
+}) {
   const localize = useDesignLocalize();
   const { showToast } = useToastContext();
   const update = useUpdateDesignProjectMutation(project.projectId);
-  const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(project.name);
   const inputRef = useRef<HTMLInputElement>(null);
+  const nameRef = useRef(project.name);
+  nameRef.current = project.name;
 
   useEffect(() => {
-    if (editing) {
-      inputRef.current?.select();
+    if (!editing) {
+      return;
     }
+    setDraft(nameRef.current);
+    const frame = requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    });
+    return () => cancelAnimationFrame(frame);
   }, [editing]);
-
-  const start = () => {
-    setDraft(project.name);
-    setEditing(true);
-  };
 
   const submit = (event?: FormEvent) => {
     event?.preventDefault();
@@ -110,9 +122,9 @@ function ProjectName({ project }: { project: DesignProjectDetail }) {
       {project.canWrite ? (
         <button
           type="button"
-          className={iconButton}
+          className={cn(iconButton, 'max-md:hidden')}
           aria-label={localize('workspace.header.rename')}
-          onClick={start}
+          onClick={() => setEditing(true)}
         >
           <Pencil className="size-4" aria-hidden="true" />
         </button>
@@ -121,37 +133,19 @@ function ProjectName({ project }: { project: DesignProjectDetail }) {
   );
 }
 
-function DesignSystemChip({ systemId }: { systemId: string }) {
-  const localize = useDesignLocalize();
-  const { data } = useDesignSystemQuery(systemId);
-  const name = data?.name ?? systemId;
-  return (
-    <Link
-      to={designSystemPath(systemId)}
-      aria-label={localize('workspace.header.design_system', { name })}
-      title={localize('workspace.header.design_system', { name })}
-      className="hidden min-w-0 max-w-[12rem] items-center gap-1.5 rounded-full border border-border-light px-2.5 py-1 text-xs text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary sm:flex"
-    >
-      <Palette className="size-3.5 shrink-0" aria-hidden="true" />
-      <span className="truncate">{name}</span>
-    </Link>
-  );
-}
-
 export default function WorkspaceHeader({
   project,
-  me,
   activePath,
   device,
   compact,
 }: {
   project: DesignProjectDetail;
-  me: DesignMe;
   activePath: string;
   device: DeviceId;
   compact: boolean;
 }) {
   const localize = useDesignLocalize();
+  const [editing, setEditing] = useState(false);
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border-light bg-presentation px-2 md:px-3">
       {compact ? <OpenSidebar className="size-9 shrink-0" /> : null}
@@ -159,16 +153,15 @@ export default function WorkspaceHeader({
         <ArrowLeft className="size-5" aria-hidden="true" />
       </Link>
       <div className="flex min-w-0 flex-1 items-center gap-2">
-        <ProjectName key={project.name} project={project} />
-        <DesignSystemChip systemId={project.designSystemId} />
+        <ProjectName project={project} editing={editing} setEditing={setEditing} />
+        <DesignSystemControl project={project} />
       </div>
       <div className="flex shrink-0 items-center gap-1" data-testid="design-workspace-actions">
         <WorkspaceHeaderActions
           project={project}
-          me={me}
           activePath={activePath}
           device={device}
-          compact={compact}
+          onRename={() => setEditing(true)}
         />
       </div>
     </header>

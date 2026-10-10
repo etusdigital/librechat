@@ -1,6 +1,6 @@
-import { MemoryRouter } from 'react-router-dom';
 import { Provider as JotaiProvider } from 'jotai';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import type { DesignMe, DesignProjectDetail, FileEntry } from '../api/types';
@@ -32,6 +32,8 @@ jest.mock('../api/workspace', () => ({
     renameFile: jest.fn(),
     deleteFile: jest.fn(),
     uploadFiles: jest.fn(),
+    duplicateProject: jest.fn(),
+    deleteProject: jest.fn(),
   },
 }));
 
@@ -138,6 +140,11 @@ beforeEach(() => {
   ws.previewUrl.mockResolvedValue({ url: PREVIEW_URL, expiresAt: '2999-01-01T00:00:00.000Z' });
 });
 
+function LocationProbe() {
+  const location = useLocation();
+  return <output data-testid="location">{location.pathname}</output>;
+}
+
 function renderWorkspace(overrides: Partial<DesignProjectDetail> = {}) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -146,8 +153,9 @@ function renderWorkspace(overrides: Partial<DesignProjectDetail> = {}) {
   return render(
     <QueryClientProvider client={client}>
       <JotaiProvider>
-        <MemoryRouter>
+        <MemoryRouter initialEntries={['/design/prj_abc']}>
           <DesignWorkspace project={{ ...project, ...overrides }} me={me} />
+          <LocationProbe />
         </MemoryRouter>
       </JotaiProvider>
     </QueryClientProvider>,
@@ -381,6 +389,81 @@ describe('workspace files', () => {
       'href',
       '/design/systems/etus',
     );
+  });
+});
+
+describe('workspace header actions', () => {
+  it('shows the versions, export and share actions of the project', async () => {
+    renderWorkspace();
+    const actions = screen.getByTestId('design-workspace-actions');
+    expect(within(actions).getByRole('button', { name: 'Versions' })).toBeVisible();
+    expect(within(actions).getByRole('button', { name: 'Export' })).toBeVisible();
+    expect(within(actions).getByRole('button', { name: 'Share' })).toBeVisible();
+  });
+
+  it('duplicates the project and opens the copy', async () => {
+    ws.duplicateProject.mockResolvedValue({ ...project, projectId: 'prj_copy' });
+    renderWorkspace();
+    await userEvent.click(screen.getByRole('button', { name: 'More actions' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Duplicate' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Duplicate project' });
+    const name = within(dialog).getByRole('textbox', { name: 'Name of the copy' });
+    expect(name).toHaveValue('Copy of Landing Produto X');
+    await userEvent.clear(name);
+    await userEvent.type(name, 'Landing B');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Duplicate' }));
+    await waitFor(() => expect(ws.duplicateProject).toHaveBeenCalledWith('prj_abc', 'Landing B'));
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent('/design/prj_copy'),
+    );
+  });
+
+  it('deletes the project only after the name is typed', async () => {
+    ws.deleteProject.mockResolvedValue(undefined);
+    renderWorkspace();
+    await userEvent.click(screen.getByRole('button', { name: 'More actions' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Delete' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Delete project' });
+    const confirm = within(dialog).getByRole('button', { name: 'Delete project' });
+    expect(confirm).toBeDisabled();
+    await userEvent.type(
+      within(dialog).getByRole('textbox', { name: 'Project name to confirm' }),
+      'Landing Produto',
+    );
+    expect(confirm).toBeDisabled();
+    await userEvent.type(
+      within(dialog).getByRole('textbox', { name: 'Project name to confirm' }),
+      ' X',
+    );
+    await userEvent.click(confirm);
+    await waitFor(() =>
+      expect(ws.deleteProject).toHaveBeenCalledWith('prj_abc', 'Landing Produto X'),
+    );
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(/^\/design$/));
+  });
+
+  it('renames the project from the menu, which is how phones reach it', async () => {
+    mockViewport(true);
+    api.updateProject.mockResolvedValue({ ...project, name: 'Landing curta' });
+    renderWorkspace();
+    expect(screen.getByRole('button', { name: 'Rename project' })).toHaveClass('max-md:hidden');
+    await userEvent.click(screen.getByRole('button', { name: 'More actions' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Rename project' }));
+    const input = await screen.findByRole('textbox', { name: 'Project name' });
+    await waitFor(() => expect(input).toHaveFocus());
+    await userEvent.clear(input);
+    await userEvent.type(input, 'Landing curta{Enter}');
+    await waitFor(() =>
+      expect(api.updateProject).toHaveBeenCalledWith('prj_abc', { name: 'Landing curta' }),
+    );
+  });
+
+  it('does not offer to delete a project the person can only read', async () => {
+    renderWorkspace({ canWrite: false });
+    await userEvent.click(screen.getByRole('button', { name: 'More actions' }));
+    expect(await screen.findByRole('menuitem', { name: 'Duplicate' })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Delete' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Rename project' })).not.toBeInTheDocument();
   });
 });
 

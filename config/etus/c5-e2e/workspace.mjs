@@ -411,6 +411,22 @@ async function mobile(browser, colorScheme) {
     el.dataset.marker = 'kept';
   });
   check(`390x844${suffix}: aba Chat sem rolagem horizontal`, await noHorizontalScroll(p));
+  const header = await p.evaluate(() => {
+    const element = document.querySelector('[data-testid="design-workspace"] header');
+    const controls = [...element.querySelectorAll('a, button, h1')].map((node) =>
+      node.getBoundingClientRect(),
+    );
+    const title = element.querySelector('h1').getBoundingClientRect();
+    return {
+      inside: controls.every((rect) => rect.left >= 0 && rect.right <= innerWidth + 0.5),
+      title: title.width,
+    };
+  });
+  check(
+    `390x844${suffix}: cabeçalho cabe na tela com as ações`,
+    header.inside && header.title >= 60,
+    `nome com ${Math.round(header.title)} px`,
+  );
   await shot(p, `mobile-chat${suffix}`);
   await axe(p, `390x844${suffix} chat`);
 

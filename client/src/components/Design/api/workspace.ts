@@ -15,6 +15,16 @@ export const workspaceKeys = {
 };
 
 export const workspaceApi = {
+  duplicateProject: (projectId: string, name: string) =>
+    designJson<t.DesignProject>(designPath('projects', projectId, 'duplicate'), {
+      method: 'POST',
+      json: { name },
+    }),
+
+  deleteProject: async (projectId: string, confirm: string) => {
+    await designFetch(designPath('projects', projectId), { method: 'DELETE', json: { confirm } });
+  },
+
   listChanges: (projectId: string, since?: string, signal?: AbortSignal) =>
     designJson<t.ProjectChanges>(designPath('projects', projectId, 'changes'), {
       query: { since },

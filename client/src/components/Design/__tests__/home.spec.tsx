@@ -281,9 +281,7 @@ describe('Design home grid', () => {
     );
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText('Step 3 of 4: Design system')).toBeVisible();
-    expect(screen.getByTestId('location')).toHaveTextContent(
-      '/design?new=1&kind=deck&template=tpl-pitch-deck',
-    );
+    expect(screen.getByTestId('location')).toHaveTextContent(/^\/design$/);
   });
 });
 
@@ -442,22 +440,27 @@ describe('New project dialog', () => {
   });
 
   it('explains when the project limit is reached', async () => {
-    api.createProject.mockRejectedValue(error(409, 'too_many_projects'));
-    renderAt('/design?new=1&template=tpl-landing-saas');
+    api.createProject.mockRejectedValue(
+      new DesignApiError({ status: 409, code: 'too_many_projects', details: { limit: 200 } }),
+    );
+    renderAt('/design?newProject=1&template=tpl-landing-saas');
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText('Step 3 of 4: Design system')).toBeVisible();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Continue' }));
     await userEvent.type(within(dialog).getByLabelText('Project name'), 'Outro');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Create project' }));
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(
-      'You reached the project limit.',
+      'You reached the limit of 200 projects.',
     );
     expect(screen.queryByText(/^workspace /)).not.toBeInTheDocument();
   });
 
   it('opens with the system chosen in the gallery and closes back to the grid', async () => {
-    renderAt('/design?new=1&system=airbnb');
+    renderAt('/design?tab=shared&newProject=1&designSystem=airbnb');
     const dialog = await screen.findByRole('dialog');
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent(/^\/design\?tab=shared$/),
+    );
     expect(within(dialog).getByText('Step 1 of 4: Type')).toBeVisible();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Continue' }));
     await userEvent.click(within(dialog).getByRole('button', { name: 'Continue' }));
@@ -466,6 +469,6 @@ describe('New project dialog', () => {
     ).toBeVisible();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(screen.getByTestId('location')).toHaveTextContent(/^\/design$/);
+    expect(screen.getByTestId('location')).toHaveTextContent(/^\/design\?tab=shared$/);
   });
 });

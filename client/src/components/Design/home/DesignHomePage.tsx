@@ -1,10 +1,9 @@
-import { useCallback, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@librechat/client';
 import { Palette, Plus } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import type { DesignMe, DesignTemplate, ProjectScope } from '../api/types';
 import {
-  NEW_PROJECT_PARAMS,
   isNewProjectKind,
   readNewProjectPreset,
   withoutNewProjectParams,
@@ -12,10 +11,10 @@ import {
 } from './new-project';
 import ProjectScopeTabs, { isProjectScope, scopePanelId, scopeTabId } from './ProjectScopeTabs';
 import { useDesignSystemDirectory } from '../api/home-queries';
+import { DESIGN_QUERY, designSystemsPath } from '../paths';
 import DesignAccessGate from '../common/DesignAccessGate';
 import NewProjectDialog from './NewProjectDialog';
 import TemplateGallery from './TemplateGallery';
-import { DESIGN_SYSTEMS_PATH } from '../paths';
 import DesignPage from '../common/DesignPage';
 import { useDesignAccess } from '../access';
 import { useDesignLocalize } from '../i18n';
@@ -23,37 +22,22 @@ import ProjectGrid from './ProjectGrid';
 
 const TAB_PARAM = 'tab';
 
-function presetParams(search: URLSearchParams, preset: NewProjectPreset) {
-  const next = withoutNewProjectParams(search);
-  next.set(NEW_PROJECT_PARAMS.open, '1');
-  if (preset.kind) {
-    next.set(NEW_PROJECT_PARAMS.kind, preset.kind);
-  }
-  if (preset.templateId) {
-    next.set(NEW_PROJECT_PARAMS.template, preset.templateId);
-  }
-  if (preset.designSystemId) {
-    next.set(NEW_PROJECT_PARAMS.system, preset.designSystemId);
-  }
-  return next;
-}
-
 function HomeContent({ me }: { me: DesignMe }) {
   const localize = useDesignLocalize();
   const [search, setSearch] = useSearchParams();
   const directory = useDesignSystemDirectory();
   const rawTab = search.get(TAB_PARAM);
   const scope: ProjectScope = isProjectScope(rawTab) ? rawTab : 'mine';
-  const preset = useMemo(() => readNewProjectPreset(search), [search]);
+  const requested = useMemo(() => readNewProjectPreset(search), [search]);
+  const [preset, setPreset] = useState<NewProjectPreset | null>(null);
 
-  const openNewProject = useCallback(
-    (next: NewProjectPreset = {}) => setSearch(presetParams(search, next), { replace: true }),
-    [search, setSearch],
-  );
-  const closeNewProject = useCallback(
-    () => setSearch(withoutNewProjectParams(search), { replace: true }),
-    [search, setSearch],
-  );
+  useEffect(() => {
+    if (requested) {
+      setPreset(requested);
+      setSearch(withoutNewProjectParams(search), { replace: true });
+    }
+  }, [requested, search, setSearch]);
+
   const changeScope = (next: ProjectScope) => {
     const params = new URLSearchParams(search);
     if (next === 'mine') {
@@ -65,7 +49,7 @@ function HomeContent({ me }: { me: DesignMe }) {
   };
 
   const startFromTemplate = (template: DesignTemplate | null) =>
-    openNewProject(
+    setPreset(
       template
         ? {
             templateId: template.id,
@@ -79,7 +63,7 @@ function HomeContent({ me }: { me: DesignMe }) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="sr-only">{localize('home_projects_heading')}</h2>
         <Link
-          to={DESIGN_SYSTEMS_PATH}
+          to={designSystemsPath()}
           className="inline-flex min-h-10 items-center gap-3 rounded-xl border border-border-light bg-surface-secondary px-3 py-2 text-sm text-text-primary no-underline transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
         >
           <Palette className="size-4 shrink-0" aria-hidden="true" />
@@ -119,7 +103,7 @@ function HomeContent({ me }: { me: DesignMe }) {
       </div>
       <NewProjectDialog
         open={preset !== null}
-        onOpenChange={(open) => (open ? openNewProject() : closeNewProject())}
+        onOpenChange={(open) => setPreset(open ? (preset ?? {}) : null)}
         me={me}
         preset={preset ?? {}}
       />
@@ -134,7 +118,11 @@ function NewProjectButton() {
     <Button
       type="button"
       size="sm"
-      onClick={() => setSearch(presetParams(search, {}), { replace: true })}
+      onClick={() => {
+        const params = new URLSearchParams(search);
+        params.set(DESIGN_QUERY.newProject, '1');
+        setSearch(params, { replace: true });
+      }}
     >
       <Plus className="size-4" aria-hidden="true" />
       {localize('home.new_project')}

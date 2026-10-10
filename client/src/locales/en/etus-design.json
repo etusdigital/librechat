@@ -59,6 +59,7 @@
     "new_create": "Create project",
     "create_error": "The project could not be created.",
     "create_error_limit": "You reached the project limit. Delete an old project to create another one.",
+    "create_error_limit_count": "You reached the limit of {{limit}} projects. Delete an old project to create another one.",
     "create_error_system": "This design system is no longer available. Pick another one.",
     "create_error_invalid": "Check the project name and try again.",
     "system_selected": "Selected:",

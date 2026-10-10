@@ -5,6 +5,8 @@ export const DESIGN_QUERY = {
   project: 'project',
   newProject: 'newProject',
   designSystem: 'designSystem',
+  projectKind: 'projectKind',
+  template: 'template',
   applyDesignSystem: 'applyDesignSystem',
 } as const;
 
@@ -30,10 +32,15 @@ export const designSystemPath = (systemId: string, options: { projectId?: string
     [DESIGN_QUERY.project]: options.projectId,
   });
 
-export const designNewProjectPath = (systemId: string) =>
+export const designNewProjectPath = (
+  systemId?: string | null,
+  options: { kind?: string | null; templateId?: string | null } = {},
+) =>
   withQuery(DESIGN_HOME_PATH, {
     [DESIGN_QUERY.newProject]: '1',
     [DESIGN_QUERY.designSystem]: systemId,
+    [DESIGN_QUERY.projectKind]: options.kind,
+    [DESIGN_QUERY.template]: options.templateId,
   });
 
 export const designApplySystemPath = (projectId: string, systemId: string) =>

@@ -7,8 +7,8 @@ import { DesignEmptyState, DesignErrorState } from '../common/DesignStates';
 import { useDebouncedValue } from './use-debounced-value';
 import { useDesignSystemsQuery } from '../api/queries';
 import { designErrorMessageKey } from '../api/errors';
-import { DESIGN_SYSTEMS_PATH } from '../paths';
 import { SwatchDots } from './SystemSwatches';
+import { designSystemsPath } from '../paths';
 import { useDesignLocalize } from '../i18n';
 import { cn } from '~/utils';
 
@@ -104,7 +104,9 @@ export default function DesignSystemPicker({
   onChange,
   defaultId,
   selected,
+  projectId = null,
 }: {
+  projectId?: string | null;
   value: string;
   onChange: (system: DesignSystemSummary) => void;
   defaultId: string;
@@ -182,7 +184,7 @@ export default function DesignSystemPicker({
           <SwatchDots system={selected} />
         </span>
         <Link
-          to={DESIGN_SYSTEMS_PATH}
+          to={designSystemsPath({ projectId })}
           className="inline-flex items-center gap-1 text-sm text-text-primary no-underline underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
         >
           {localize('home.systems_gallery_link')}

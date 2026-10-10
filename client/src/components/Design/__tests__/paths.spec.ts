@@ -21,9 +21,14 @@ describe('design paths', () => {
       project: 'project',
       newProject: 'newProject',
       designSystem: 'designSystem',
+      projectKind: 'projectKind',
+      template: 'template',
       applyDesignSystem: 'applyDesignSystem',
     });
     expect(designNewProjectPath('airbnb')).toBe('/design?newProject=1&designSystem=airbnb');
+    expect(designNewProjectPath(null, { kind: 'deck', templateId: 'tpl-pitch-deck' })).toBe(
+      '/design?newProject=1&projectKind=deck&template=tpl-pitch-deck',
+    );
     expect(designApplySystemPath('prj_1', 'airbnb')).toBe('/design/prj_1?applyDesignSystem=airbnb');
   });
 });

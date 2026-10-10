@@ -62,7 +62,9 @@ describe('new project helpers', () => {
       templateId: 'tpl-pitch-deck',
       designSystemId: 'airbnb',
     });
-    expect(href).toBe('/design?new=1&kind=deck&template=tpl-pitch-deck&system=airbnb');
+    expect(href).toBe(
+      '/design?newProject=1&designSystem=airbnb&projectKind=deck&template=tpl-pitch-deck',
+    );
     const search = new URLSearchParams(href.split('?')[1]);
     expect(readNewProjectPreset(search)).toEqual({
       kind: 'deck',
@@ -70,11 +72,15 @@ describe('new project helpers', () => {
       designSystemId: 'airbnb',
     });
     expect(
-      readNewProjectPreset(new URLSearchParams('new=1&kind=poster&template=../x&system=Bad Id')),
+      readNewProjectPreset(
+        new URLSearchParams('newProject=1&projectKind=poster&template=../x&designSystem=Bad Id'),
+      ),
     ).toEqual({});
-    expect(readNewProjectPreset(new URLSearchParams('kind=deck'))).toBeNull();
+    expect(readNewProjectPreset(new URLSearchParams('projectKind=deck'))).toBeNull();
     expect(
-      withoutNewProjectParams(new URLSearchParams('tab=shared&new=1&kind=deck')).toString(),
+      withoutNewProjectParams(
+        new URLSearchParams('tab=shared&newProject=1&projectKind=deck&designSystem=x'),
+      ).toString(),
     ).toBe('tab=shared');
   });
 

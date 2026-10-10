@@ -41,6 +41,15 @@ function retryAfterOf(response: Response) {
   return Number.isFinite(seconds) && seconds >= 0 ? seconds : null;
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+
+export function errorDetailsOf(body: Record<string, unknown>) {
+  const { code: _code, message: _message, details, ...rest } = body;
+  const merged = { ...rest, ...(isRecord(details) ? details : {}) };
+  return Object.keys(merged).length > 0 ? merged : null;
+}
+
 async function errorOf(response: Response) {
   let payload: unknown = null;
   try {
@@ -48,19 +57,13 @@ async function errorOf(response: Response) {
   } catch {
     payload = null;
   }
-  const error =
-    payload && typeof payload === 'object' && 'error' in payload
-      ? (payload as { error: unknown }).error
-      : null;
-  const body = error && typeof error === 'object' ? (error as Record<string, unknown>) : {};
+  const error = isRecord(payload) ? payload.error : null;
+  const body = isRecord(error) ? error : {};
   return new DesignApiError({
     status: response.status,
     code: typeof body.code === 'string' ? body.code : `http_${response.status}`,
     message: typeof body.message === 'string' ? body.message : undefined,
-    details:
-      body.details && typeof body.details === 'object'
-        ? (body.details as Record<string, unknown>)
-        : null,
+    details: errorDetailsOf(body),
     retryAfterSeconds: retryAfterOf(response),
   });
 }

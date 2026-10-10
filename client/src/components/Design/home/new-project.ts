@@ -1,5 +1,5 @@
 import type { DesignMe, DesignTemplate, ProjectKind, TemplateKind } from '../api/types';
-import { DESIGN_HOME_PATH } from '../paths';
+import { DESIGN_QUERY, designNewProjectPath } from '../paths';
 
 export const NEW_PROJECT_KINDS = ['prototype', 'deck', 'doc', 'image', 'video'] as const;
 export type NewProjectKind = (typeof NEW_PROJECT_KINDS)[number];
@@ -16,12 +16,12 @@ export const BRIEF_MAX = 4000;
 const CATALOG_ID = /^[a-z0-9][a-z0-9._-]{0,79}$/;
 const TEMPLATE_ID = /^tpl-[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-export const NEW_PROJECT_PARAMS = {
-  open: 'new',
-  kind: 'kind',
-  template: 'template',
-  system: 'system',
-} as const;
+const NEW_PROJECT_QUERY_KEYS = [
+  DESIGN_QUERY.newProject,
+  DESIGN_QUERY.designSystem,
+  DESIGN_QUERY.projectKind,
+  DESIGN_QUERY.template,
+] as const;
 
 export interface NewProjectPreset {
   kind?: NewProjectKind;
@@ -78,12 +78,12 @@ export function initialStep(preset: NewProjectPreset): NewProjectStep {
 }
 
 export function readNewProjectPreset(search: URLSearchParams): NewProjectPreset | null {
-  if (search.get(NEW_PROJECT_PARAMS.open) !== '1') {
+  if (search.get(DESIGN_QUERY.newProject) !== '1') {
     return null;
   }
-  const kind = search.get(NEW_PROJECT_PARAMS.kind);
-  const templateId = search.get(NEW_PROJECT_PARAMS.template) ?? '';
-  const designSystemId = search.get(NEW_PROJECT_PARAMS.system) ?? '';
+  const kind = search.get(DESIGN_QUERY.projectKind);
+  const templateId = search.get(DESIGN_QUERY.template) ?? '';
+  const designSystemId = search.get(DESIGN_QUERY.designSystem) ?? '';
   return {
     ...(isNewProjectKind(kind) ? { kind } : {}),
     ...(TEMPLATE_ID.test(templateId) ? { templateId } : {}),
@@ -93,24 +93,17 @@ export function readNewProjectPreset(search: URLSearchParams): NewProjectPreset 
 
 export function withoutNewProjectParams(search: URLSearchParams) {
   const next = new URLSearchParams(search);
-  for (const key of Object.values(NEW_PROJECT_PARAMS)) {
+  for (const key of NEW_PROJECT_QUERY_KEYS) {
     next.delete(key);
   }
   return next;
 }
 
 export function newProjectHref(preset: NewProjectPreset = {}) {
-  const search = new URLSearchParams({ [NEW_PROJECT_PARAMS.open]: '1' });
-  if (preset.kind) {
-    search.set(NEW_PROJECT_PARAMS.kind, preset.kind);
-  }
-  if (preset.templateId) {
-    search.set(NEW_PROJECT_PARAMS.template, preset.templateId);
-  }
-  if (preset.designSystemId) {
-    search.set(NEW_PROJECT_PARAMS.system, preset.designSystemId);
-  }
-  return `${DESIGN_HOME_PATH}?${search.toString()}`;
+  return designNewProjectPath(preset.designSystemId, {
+    kind: preset.kind,
+    templateId: preset.templateId,
+  });
 }
 
 export function createProjectInput(draft: NewProjectDraft) {

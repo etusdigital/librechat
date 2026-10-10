@@ -29,9 +29,9 @@ import {
   type NewProjectPreset,
   type NewProjectStep,
 } from './new-project';
+import { useDesignLocalize, type DesignLocalize, type DesignTranslationKey } from '../i18n';
 import { useCreateDesignProjectMutation, useDesignTemplatesQuery } from '../api/queries';
-import { useDesignLocalize, type DesignTranslationKey } from '../i18n';
-import { designErrorCode, designErrorMessageKey } from '../api/errors';
+import { designErrorCode, designErrorMessageKey, isDesignApiError } from '../api/errors';
 import { useDesignSystemDirectory } from '../api/home-queries';
 import { useSetPendingBrief } from '../state/pending-brief';
 import DesignSystemPicker from './DesignSystemPicker';
@@ -61,6 +61,14 @@ const CREATE_ERROR_KEYS: Record<string, DesignTranslationKey> = {
   design_system_not_found: 'home.create_error_system',
   invalid_input: 'home.create_error_invalid',
 };
+
+export function createErrorMessage(error: unknown, localize: DesignLocalize) {
+  const limit = isDesignApiError(error) ? error.details?.limit : undefined;
+  if (designErrorCode(error) === 'too_many_projects' && typeof limit === 'number') {
+    return localize('home.create_error_limit_count', { limit });
+  }
+  return localize(createErrorKey(error));
+}
 
 export function createErrorKey(error: unknown): DesignTranslationKey {
   const code = designErrorCode(error);
@@ -355,7 +363,7 @@ function NewProjectForm({
             role="alert"
             className="border-t border-border-light px-4 py-2 text-sm text-text-destructive sm:px-6"
           >
-            {localize(createErrorKey(error))}
+            {createErrorMessage(error, localize)}
           </p>
         ) : null}
         <div className="flex items-center justify-between gap-2 border-t border-border-light p-4 sm:px-6">

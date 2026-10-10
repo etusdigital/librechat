@@ -59,6 +59,7 @@
     "new_create": "Criar projeto",
     "create_error": "Não foi possível criar o projeto.",
     "create_error_limit": "Você chegou ao limite de projetos. Apague um projeto antigo para criar outro.",
+    "create_error_limit_count": "Você chegou ao limite de {{limit}} projetos. Apague um projeto antigo para criar outro.",
     "create_error_system": "Esse design system não está mais disponível. Escolha outro.",
     "create_error_invalid": "Confira o nome do projeto e tente de novo.",
     "system_selected": "Selecionado:",

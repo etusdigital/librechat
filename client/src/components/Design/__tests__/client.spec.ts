@@ -72,6 +72,25 @@ describe('design API client', () => {
     expect(designErrorMessageKey(error)).toBe('error_hub_unavailable');
   });
 
+  it('reads the details the design-service spreads inside the error', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(409, { error: { code: 'too_many_projects', message: 'Limite', limit: 200 } }),
+    );
+    const error = await designApi.me().catch((caught) => caught);
+    expect(error).toMatchObject({ code: 'too_many_projects', details: { limit: 200 } });
+  });
+
+  it('keeps nested details and has none when the error carries only code and message', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(400, { error: { code: 'share_expiry_too_long', details: { maxDays: 30 } } }),
+    );
+    await expect(designApi.me()).rejects.toMatchObject({ details: { maxDays: 30 } });
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(404, { error: { code: 'not_found', message: 'x' } }),
+    );
+    await expect(designApi.me()).rejects.toMatchObject({ details: null });
+  });
+
   it('falls back to an http code when the body is not the proxy format', async () => {
     fetchMock.mockResolvedValueOnce(fakeResponse(500, '<html>'));
     await expect(designApi.me()).rejects.toMatchObject({ status: 500, code: 'http_500' });

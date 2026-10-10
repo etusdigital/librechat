@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "upstreamCommit": "802708f6c9f294347ef777b1fda49b9cbe26ef72",
+  "items": [
+    {
+      "key": "od-image-neon-product-shot",
+      "surface": "image",
+      "name": "[Imagem] Neon Product Shot",
+      "oneliner": "A studio product photo lit by neon tubes.",
+      "category": "etus-design-image",
+      "suggestedModel": "gpt-image-2",
+      "aspect": "1:1",
+      "prompt": "Studio product photo of a matte black speaker lit by pink and teal neon tubes, 85mm lens.\n\n---\nFonte: Jane Doe, https://x.com/janedoe/status/1 (example/awesome-image-prompts). Licença CC-BY-4.0.",
+      "license": "CC-BY-4.0",
+      "attribution": {
+        "author": "Jane Doe",
+        "url": "https://x.com/janedoe/status/1",
+        "repo": "example/awesome-image-prompts"
+      }
+    },
+    {
+      "key": "od-video-city-timelapse",
+      "surface": "video",
+      "name": "[Vídeo] City Timelapse",
+      "oneliner": "A night city timelapse with light trails (vídeo disponível na fase B).",
+      "category": "etus-design-video",
+      "suggestedModel": "seedance-2.0",
+      "aspect": "16:9",
+      "prompt": "Night timelapse of a city avenue with car light trails, slow push in. Duration: 00:10\n\n---\nFonte: John Roe, https://x.com/johnroe/status/2 (example/awesome-video-prompts). Licença CC-BY-4.0.",
+      "license": "CC-BY-4.0",
+      "attribution": {
+        "author": "John Roe",
+        "url": "https://x.com/johnroe/status/2",
+        "repo": "example/awesome-video-prompts"
+      }
+    }
+  ]
+}

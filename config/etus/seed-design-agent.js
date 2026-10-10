@@ -2,7 +2,12 @@ const crypto = require('crypto');
 const { isDeepStrictEqual } = require('util');
 const { z } = require('zod');
 const { agentCreateSchema } = require('@librechat/api');
-const { AccessRoleIds, PrincipalType, ResourceType } = require('librechat-data-provider');
+const {
+  Constants,
+  AccessRoleIds,
+  PrincipalType,
+  ResourceType,
+} = require('librechat-data-provider');
 const {
   SeedError,
   parseCliArgs,
@@ -17,6 +22,11 @@ const SKILL_SOURCE_ID = 'etus-design';
 const AGENT_PROVIDER = 'ETUS AI';
 const RECOMMENDED_MODEL = 'cc/claude-sonnet-5';
 const ALLOWED_TOOLS = ['image_gen_oai', 'ask_user_question'];
+const DESIGN_MCP_SERVER = 'etus';
+const DESIGN_TOOL_PATTERN = /^design__[a-z][a-z0-9_]{1,47}_mcp_etus$/;
+const DESIGN_TOOL_SUFFIX = `${Constants.mcp_delimiter}${DESIGN_MCP_SERVER}`;
+const MAX_TOOL_NAME_LENGTH = 64;
+const ACTION_DELIMITER = '_action_';
 const MAX_SKILLS = 60;
 const MAX_INSTRUCTIONS_CHARS = 60000;
 
@@ -29,6 +39,7 @@ const SEEDED_FIELDS = [
   'model_parameters',
   'artifacts',
   'tools',
+  'mcpServerNames',
   'skills',
   'skills_enabled',
   'skills_scope',
@@ -37,7 +48,22 @@ const SEEDED_FIELDS = [
   'category',
 ];
 
+const AGENT_SCHEMA_EXCLUDED_FIELDS = new Set(['mcpServerNames']);
+
 const nonEmpty = z.string().trim().min(1);
+
+function isDesignTool(name) {
+  return (
+    DESIGN_TOOL_PATTERN.test(name) &&
+    name.length <= MAX_TOOL_NAME_LENGTH &&
+    name.indexOf(Constants.mcp_delimiter) === name.length - DESIGN_TOOL_SUFFIX.length &&
+    !name.includes(ACTION_DELIMITER)
+  );
+}
+
+const toolName = z.string().refine((name) => ALLOWED_TOOLS.includes(name) || isDesignTool(name), {
+  message: `must be one of ${ALLOWED_TOOLS.join(', ')} or design__<name>_mcp_${DESIGN_MCP_SERVER}`,
+});
 
 const AgentDefinitionSchema = z
   .object({
@@ -54,7 +80,7 @@ const AgentDefinitionSchema = z
     model: nonEmpty,
     model_parameters: z.record(z.unknown()).optional(),
     artifacts: z.enum(['default', 'shadcnui', 'custom']).default('default'),
-    tools: z.array(z.enum(ALLOWED_TOOLS)).default([]),
+    tools: z.array(toolName).default([]),
     skillNames: z
       .array(nonEmpty)
       .max(MAX_SKILLS)
@@ -125,6 +151,7 @@ function buildAgentPayload(definition, skillIds) {
     model_parameters: definition.model_parameters ?? {},
     artifacts: definition.artifacts,
     tools: definition.tools,
+    mcpServerNames: definition.tools.some(isDesignTool) ? [DESIGN_MCP_SERVER] : [],
     skills: skillIds,
     skills_enabled: definition.skills_enabled,
     skills_scope: definition.skills_scope,
@@ -137,7 +164,9 @@ function buildAgentPayload(definition, skillIds) {
   if (!validated.success) {
     throw formatZodError('Agent payload', validated.error);
   }
-  const dropped = SEEDED_FIELDS.filter((field) => !(field in validated.data));
+  const dropped = SEEDED_FIELDS.filter(
+    (field) => !AGENT_SCHEMA_EXCLUDED_FIELDS.has(field) && !(field in validated.data),
+  );
   if (dropped.length > 0) {
     throw new SeedError(`LibreChat agent schema does not accept: ${dropped.join(', ')}`);
   }
@@ -342,6 +371,8 @@ module.exports = {
   SKILL_SOURCE_ID,
   AGENT_PROVIDER,
   ALLOWED_TOOLS,
+  DESIGN_MCP_SERVER,
+  isDesignTool,
   parseAgentDefinition,
   resolveSkillIds,
   buildAgentPayload,

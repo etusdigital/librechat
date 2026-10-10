@@ -7,6 +7,27 @@ jest.mock('../../connect', () => jest.fn().mockResolvedValue(true));
 const fixture = require('./fixtures/etus-design.agent.json');
 const AGENT_ID = fixture.id;
 const SKILL_NAMES = fixture.skillNames;
+const DESIGN_TOOLS = [
+  'ask_user_question',
+  'design__get_context_mcp_etus',
+  'design__list_design_systems_mcp_etus',
+  'design__get_design_system_mcp_etus',
+  'design__list_projects_mcp_etus',
+  'design__create_project_mcp_etus',
+  'design__get_project_mcp_etus',
+  'design__list_files_mcp_etus',
+  'design__read_file_mcp_etus',
+  'design__search_files_mcp_etus',
+  'design__write_file_mcp_etus',
+  'design__delete_file_mcp_etus',
+  'design__list_comments_mcp_etus',
+  'design__resolve_comment_mcp_etus',
+  'design__generate_image_mcp_etus',
+  'design__edit_image_mcp_etus',
+  'design__generate_video_mcp_etus',
+  'design__export_project_mcp_etus',
+  'design__get_job_mcp_etus',
+];
 
 describe('seed-design-agent', () => {
   let env;
@@ -60,6 +81,7 @@ describe('seed-design-agent', () => {
       model: 'cc/claude-sonnet-5',
       artifacts: 'default',
       tools: ['image_gen_oai', 'ask_user_question'],
+      mcpServerNames: [],
       skills: skillIds,
       skills_enabled: true,
       skills_scope: 'selected',
@@ -109,6 +131,40 @@ describe('seed-design-agent', () => {
     expect(agent.skills).toEqual(skillIds.slice(0, 2));
     expect(agent.versions).toHaveLength(2);
     expect(await ownerEntries(agent._id)).toHaveLength(1);
+  });
+
+  it('seeds the v2 agent with the design tools from the hub MCP server', async () => {
+    const result = await seedDesignAgent({
+      definition: definition({ tools: DESIGN_TOOLS }),
+      author,
+    });
+
+    expect(result.action).toBe('create');
+    const agent = await models.Agent.findOne({ id: AGENT_ID }).lean();
+    expect(agent.tools).toEqual(DESIGN_TOOLS);
+    expect(agent.mcpServerNames).toEqual(['etus']);
+    expect(agent.skill_authoring_enabled).toBe(false);
+
+    const second = await seedDesignAgent({
+      definition: definition({ tools: DESIGN_TOOLS }),
+      author,
+    });
+    expect(second.action).toBe('unchanged');
+  });
+
+  it('moves the v1 agent to the v2 tools and back', async () => {
+    await seedDesignAgent({ definition: definition(), author });
+
+    const toV2 = await seedDesignAgent({ definition: definition({ tools: DESIGN_TOOLS }), author });
+    expect(toV2.action).toBe('update');
+    expect(toV2.changes.map((change) => change.field)).toEqual(['tools', 'mcpServerNames']);
+    expect(toV2.changes[1]).toEqual({ field: 'mcpServerNames', before: [], after: ['etus'] });
+
+    const toV1 = await seedDesignAgent({ definition: definition(), author });
+    expect(toV1.changes.map((change) => change.field)).toEqual(['tools', 'mcpServerNames']);
+    const agent = await models.Agent.findOne({ id: AGENT_ID }).lean();
+    expect(agent.tools).toEqual(['image_gen_oai', 'ask_user_question']);
+    expect(agent.mcpServerNames).toEqual([]);
   });
 
   it('does not write anything on --dry-run', async () => {
@@ -179,6 +235,33 @@ describe('seed-design-agent', () => {
   it('rejects tools outside the allowlist and unknown fields', () => {
     expect(() => parseAgentDefinition(definition({ tools: ['execute_code'] }))).toThrow('tools.0');
     expect(() => parseAgentDefinition(definition({ skills: ['x'] }))).toThrow('skills');
+  });
+
+  it('accepts the v1 and v2 tool names', () => {
+    expect(parseAgentDefinition(definition()).tools).toEqual([
+      'image_gen_oai',
+      'ask_user_question',
+    ]);
+    expect(parseAgentDefinition(definition({ tools: DESIGN_TOOLS })).tools).toEqual(DESIGN_TOOLS);
+  });
+
+  it.each([
+    ['another server', 'design__write_file_mcp_other'],
+    ['the server of the spec draft', 'write_file_mcp_etus-design'],
+    ['another hub app', 'tasks__list_tasks_mcp_etus'],
+    ['the whole-server wildcard', 'sys__all__sys_mcp_etus'],
+    ['the server marker', 'sys__server__sys_mcp_etus'],
+    ['an action tool', 'design__send_action_item_mcp_etus'],
+    ['a second MCP delimiter', 'design__foo_mcp_bar_mcp_etus'],
+    ['a delimiter touching the suffix', 'design__foo_mcp_mcp_etus'],
+    ['an uppercase name', 'design__Write_file_mcp_etus'],
+    ['a one-letter name', 'design__w_mcp_etus'],
+    ['a name without the app prefix', 'write_file_mcp_etus'],
+    ['a name over 64 characters', `design__${'a'.repeat(48)}_mcp_etus`],
+  ])('rejects %s', (_case, tool) => {
+    expect(() => parseAgentDefinition(definition({ tools: ['ask_user_question', tool] }))).toThrow(
+      'tools.1',
+    );
   });
 
   it('rejects skill settings that would leave the agent without its skills', () => {

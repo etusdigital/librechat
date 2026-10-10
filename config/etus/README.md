@@ -125,3 +125,26 @@ ETUS_DESIGN_BRIDGE_JS=../etus-design/design-service/src/preview/bridge/bridge.js
 ```
 
 O modelo falso também guarda as imagens recebidas (`GET /__images`). As capturas ficam em `C9_SCREENSHOTS`, quando definido.
+
+## `e2e/comments/`
+
+E2e local dos comentários na prévia (pacote C7, critério C-5). Usa o mesmo modelo falso e o mesmo agente do `e2e/chat/`, com o modelo na porta 4801 (`librechat.e2e.yaml` desta pasta). O design-service é simulado pelo Playwright em `/api/etus/design/*`, com os comentários (`GET` e `POST /projects/:id/comments`, `PATCH /comments/:id`) guardados em memória, e a prévia em `/preview/*` recebe o `bridge.js` real do repositório `etus-design`.
+
+Confere: clique real num elemento da prévia abre a caixa do comentário logo abaixo dele; com Ajustar, a caixa fica no tamanho normal e dentro da prévia; dois comentários gravados com seletor, trecho, versão e dispositivo; **Enviar ao chat** põe no composer o texto no formato de C 3.7 sem enviar e marca os comentários como enviados; ao enviar, o agente simulado recebe o pedido; os comentários resolvidos pelo agente aparecem em Resolvidos com a nota; reabrir; clicar num comentário realça o elemento; e, em 390x844 nos temas claro e escuro, comentar sem rolagem horizontal e voltar para a aba Chat com o pedido no composer.
+
+```sh
+docker run -d --rm --name c7-e2e-mongo -p 127.0.0.1:27187:27017 mongo:8.0
+npm run build:packages && npm run build:client
+```
+
+`.env` local (fora do git) como o do `e2e/chat/`, com `PORT=3187`, `MONGO_URI=mongodb://127.0.0.1:27187/LibreChatC7`, `DOMAIN_CLIENT` e `DOMAIN_SERVER` em `http://localhost:3187` `CONFIG_PATH` apontando para `config/etus/e2e/comments/librechat.e2e.yaml` e `LOGIN_MAX=100` (cada execução entra 3 vezes, e o limite padrão de 7 entradas em 5 minutos derruba a segunda execução seguida).
+
+```sh
+FAKE_LLM_PORT=4801 node config/etus/e2e/chat/fake-llm.mjs &
+NODE_ENV=production node api/server/index.js &
+node config/etus/e2e/comments/comments.mjs register
+node config/etus/seed-design-agent.js --file config/etus/e2e/chat/agent.json --author-email designer.c7@example.com
+ETUS_DESIGN_BRIDGE_JS=../etus-design/design-service/src/preview/bridge/bridge.js node config/etus/e2e/comments/comments.mjs
+```
+
+O erro `Failed to read the 'serviceWorker' property` que aparece no log vem do `serviceWorkers: 'block'` do Playwright dentro do iframe sandbox da prévia, não da tela. O desktop roda em 1600x900: em 1280x800, com a barra lateral do LibreChat aberta e o painel de comentários, a área da prévia fica com cerca de 160 px e o Playwright não alcança o elemento (o clique cai no painel). As capturas ficam em `C7_SCREENSHOTS`, quando definido.

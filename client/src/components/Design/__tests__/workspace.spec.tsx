@@ -15,9 +15,13 @@ jest.mock('~/components/Chat/Menus/OpenSidebar', () => ({
   default: () => null,
 }));
 
+jest.mock('../chat/DesignChatAdapter', () => ({
+  __esModule: true,
+  useIsResponding: () => false,
+}));
+
 jest.mock('../chat/DesignChatSlot', () => ({
   __esModule: true,
-  useDesignChatResponding: () => false,
   default: ({
     pendingBrief,
     composerText,

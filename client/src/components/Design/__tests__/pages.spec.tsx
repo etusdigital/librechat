@@ -20,6 +20,16 @@ jest.mock('~/components/Chat/Menus/OpenSidebar', () => ({
   default: () => null,
 }));
 
+jest.mock('../chat/DesignChatAdapter', () => ({
+  __esModule: true,
+  useIsResponding: () => false,
+}));
+
+jest.mock('../chat/DesignChatSlot', () => ({
+  __esModule: true,
+  default: () => <div data-testid="design-chat-slot" />,
+}));
+
 jest.mock('../api/client', () => ({
   designApi: { me: jest.fn(), listProjects: jest.fn(), getProject: jest.fn() },
 }));

@@ -9,7 +9,9 @@ const OWNED_PREFIXES = Object.freeze([
   'config/etus/',
   'client/src/components/Design/',
   'client/src/components/Etus/',
+  'e2e/specs/etus-design/',
 ]);
+const OWNED_FILES = Object.freeze(['.github/workflows/etus-design-e2e.yml']);
 const OWNED_PATTERNS = Object.freeze([/^client\/src\/locales\/[^/]+\/etus-design\.json$/]);
 
 const DESIGN_TOUCHPOINTS = Object.freeze([
@@ -68,6 +70,7 @@ class TouchpointError extends Error {
 
 const isOwnedPath = (filePath) =>
   OWNED_PREFIXES.some((prefix) => filePath.startsWith(prefix)) ||
+  OWNED_FILES.includes(filePath) ||
   OWNED_PATTERNS.some((pattern) => pattern.test(filePath));
 
 const isAllowedPath = (filePath) => isOwnedPath(filePath) || UPSTREAM_TOUCHPOINTS.has(filePath);
@@ -172,6 +175,7 @@ if (require.main === module) {
 
 module.exports = {
   OWNED_PREFIXES,
+  OWNED_FILES,
   OWNED_PATTERNS,
   DESIGN_TOUCHPOINTS,
   EARLIER_TOUCHPOINTS,

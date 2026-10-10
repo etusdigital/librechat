@@ -37,6 +37,9 @@ describe('touchpoint rules', () => {
     'api/server/index.js',
     'client/src/routes/index.tsx',
     '.env.example',
+    'e2e/specs/etus-design/compose.yml',
+    'e2e/specs/etus-design/support/session.ts',
+    '.github/workflows/etus-design-e2e.yml',
   ])('allows %s', (filePath) => {
     expect(isAllowedPath(filePath)).toBe(true);
   });
@@ -54,6 +57,9 @@ describe('touchpoint rules', () => {
     'client/src/locales/pt-BR/other.json',
     'packages/api/src/index.ts',
     '.github/workflows/etus-checks.yml',
+    '.github/workflows/etus-design-e2e.yml.bak',
+    'e2e/specs/etus-designx/a.ts',
+    'e2e/specs/mock/design.spec.ts',
   ])('refuses %s', (filePath) => {
     expect(isAllowedPath(filePath)).toBe(false);
   });

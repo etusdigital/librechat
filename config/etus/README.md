@@ -148,3 +148,20 @@ ETUS_DESIGN_BRIDGE_JS=../etus-design/design-service/src/preview/bridge/bridge.js
 ```
 
 O erro `Failed to read the 'serviceWorker' property` que aparece no log vem do `serviceWorkers: 'block'` do Playwright dentro do iframe sandbox da prévia, não da tela. O desktop roda em 1600x900: em 1280x800, com a barra lateral do LibreChat aberta e o painel de comentários, a área da prévia fica com cerca de 160 px e o Playwright não alcança o elemento (o clique cai no painel). As capturas ficam em `C7_SCREENSHOTS`, quando definido.
+
+## Suíte e2e da tela Design (`e2e/specs/etus-design/`)
+
+Suíte do pacote C11, que consolida os e2e locais acima num ambiente docker de teste e cobre os critérios C-1 a C-17 da spec C. Roda em Chromium, Firefox e WebKit, com o build de produção do chat (imagem do `Dockerfile` do fork), o nginx de produção do `etus-design` (`design-service/deploy/nginx`, montado sem mudança), o design-service, o renderer e o egress reais, um Logto e um hub simulados (`services/fake-idp-hub.mjs`: login OpenID de verdade, troca do token de repasse, permissões por pessoa e gravação do padrão da empresa) e um modelo simulado (`services/fake-llm.mjs`). Um nginx de borda (`edge/`) faz o papel do Cloudflare: termina o TLS de `chat.etus.test`, `idp.etus.test` e `hub.etus.test` com uma CA gerada a cada execução.
+
+```sh
+ETUS_DESIGN_DIR=../etus-design e2e/specs/etus-design/run.sh
+```
+
+- `run.sh` monta as imagens (chat, design-service, renderer e egress a partir do `ETUS_DESIGN_DIR`), sobe o ambiente, roda a suíte e derruba tudo. O relatório, os traces e os logs dos serviços ficam em `e2e/specs/etus-design/.results/` (ou `E2E_RESULTS_DIR`).
+- `E2E_SKIP_BUILD=1` usa as imagens que já existem; `ETUS_DESIGN_SERVICE_IMAGE`, `ETUS_DESIGN_RENDERER_IMAGE` e `ETUS_DESIGN_EGRESS_IMAGE` trocam as imagens do etus-design (a CI usa as do GHCR na tag do commit de `etus-design.ref`).
+- `E2E_PROJECTS="chromium firefox"`, `E2E_GREP="C-2"` e `E2E_WORKERS=2` filtram a execução; `E2E_KEEP=1` deixa o ambiente de pé.
+- Para iterar no client sem refazer a imagem: `npm run build:client` e `COMPOSE_FILE=compose.yml:compose.dev.yml`, que monta o `client/dist` no container do chat.
+- As pessoas de teste são `ana` (Designer, dona do agente semeado), `bia` (Colaborador, sem PPTX e sem padrão da empresa), `carla` (Administrador) e `davi` (sem permissão do app). O login escolhe a pessoa pelo cookie `e2e_persona` em `idp.etus.test`.
+- O service worker do chat fica bloqueado nos testes, menos no C-2, que espera `navigator.serviceWorker.controller` antes de interagir e confere que as respostas de `/preview/` vêm da rede com a CSP `sandbox`. Cada contexto novo baixaria o precache inteiro do build.
+- O `.env` do chat de teste é `chat.env` (sem segredos; os aleatórios são gerados pelo serviço `init`), com `LOGIN_MAX` alto porque a suíte entra muitas vezes do mesmo endereço.
+- A CI roda a suíte em `.github/workflows/etus-design-e2e.yml` nos PRs para `etus` que mexem em `client/src/components/Design/**`, nos textos do Design, em `config/etus/**` ou na própria suíte. Ela precisa do segredo `ETUS_DESIGN_READ_TOKEN`, com leitura do repositório `evolution-foundation/etus-design` e dos pacotes dele no GHCR.

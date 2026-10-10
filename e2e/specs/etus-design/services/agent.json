@@ -1,0 +1,14 @@
+{
+  "key": "etus-design",
+  "id": "agent_etus_design",
+  "name": "Etus Design",
+  "description": "Minimal Etus Design agent for the Design e2e suite, without tools.",
+  "instructions": "If the first user message starts with the line [Projeto Etus Design]: <projectId>, that is the project of this conversation.",
+  "provider": "ETUS AI",
+  "model": "cc/claude-sonnet-5",
+  "artifacts": "default",
+  "tools": [],
+  "skillNames": [],
+  "conversation_starters": [],
+  "category": "general"
+}

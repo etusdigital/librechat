@@ -1,0 +1,29 @@
+version: 1.3.17
+cache: true
+interface:
+  modelSelect: true
+  parameters: true
+  presets: true
+registration:
+  socialLogins: ['openid']
+endpoints:
+  custom:
+    - name: 'ETUS AI'
+      apiKey: '${FAKE_LLM_KEY}'
+      baseURL: 'http://fake-llm:4799/v1'
+      models:
+        default: ['cc/claude-sonnet-5', 'rapido']
+        fetch: false
+      titleConvo: false
+      modelDisplayLabel: 'ETUS AI'
+modelSpecs:
+  enforce: false
+  prioritize: true
+  addedEndpoints: ['agents']
+  list:
+    - name: 'rapido'
+      label: 'Rápido'
+      default: true
+      preset:
+        endpoint: 'ETUS AI'
+        model: 'rapido'

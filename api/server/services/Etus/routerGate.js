@@ -5,13 +5,15 @@ const DEFAULT_ROUTER_URL = 'https://router.etus.io';
 const AI_ACCESS_DENIED = 'etus_no_ai_access';
 const NO_ACTIVE_KEY_CODE = 'AUTH_002';
 
+const getRouterUrl = () =>
+  (process.env.ETUS_ROUTER_URL?.trim() || DEFAULT_ROUTER_URL).replace(/\/+$/, '');
+
 function getGateConfig() {
   const delegationKey = process.env.ETUS_DELEGATION_KEY?.trim();
   if (!delegationKey || process.env.ETUS_ACCESS_GATE?.trim().toLowerCase() === 'off') {
     return null;
   }
-  const url = (process.env.ETUS_ROUTER_URL?.trim() || DEFAULT_ROUTER_URL).replace(/\/+$/, '');
-  return { url, delegationKey };
+  return { url: getRouterUrl(), delegationKey };
 }
 
 const isAccessGateEnabled = () => getGateConfig() != null;
@@ -84,6 +86,7 @@ function withAccessDeniedRedirect(passport, clientDomain) {
 
 module.exports = {
   AI_ACCESS_DENIED,
+  getRouterUrl,
   isAccessGateEnabled,
   hasRouterAccess,
   assertRouterAccess,

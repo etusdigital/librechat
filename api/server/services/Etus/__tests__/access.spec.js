@@ -13,6 +13,7 @@ jest.mock('../groups', () => ({
   memberKeyOf: jest.requireActual('../groups').memberKeyOf,
   syncHubGroups: jest.fn(),
 }));
+jest.mock('../routerModels', () => ({ syncRouterModels: jest.fn(async () => true) }));
 jest.mock('~/models', () => ({
   getUserById: jest.fn(),
   updateUser: jest.fn(),
@@ -22,6 +23,7 @@ const { logger } = require('@librechat/data-schemas');
 const { fetchUserSettings, isHubEnabled } = require('../hubClient');
 const { writeUserSettings } = require('../settingsCache');
 const { syncHubGroups } = require('../groups');
+const { syncRouterModels } = require('../routerModels');
 const db = require('~/models');
 const { SystemRoles } = require('librechat-data-provider');
 const { syncHubAccess, sanitizeValues, hubRoleFor } = require('../access');
@@ -84,6 +86,18 @@ describe('syncHubAccess', () => {
     fetchUserSettings.mockResolvedValue({ active: true, groups: [], values: {} });
     syncHubGroups.mockRejectedValueOnce(new Error('mongo down'));
     await expect(syncHubAccess(user)).resolves.toBe(false);
+  });
+
+  it('refreshes the router model list with the login id token', async () => {
+    fetchUserSettings.mockResolvedValue({ active: true, groups: [], values: {} });
+    expect(await syncHubAccess(user, 'id.jwt')).toBe(true);
+    expect(syncRouterModels).toHaveBeenCalledWith('user-1', 'id.jwt');
+  });
+
+  it('refreshes the router model list even when the hub is disabled', async () => {
+    isHubEnabled.mockReturnValue(false);
+    expect(await syncHubAccess(user, 'id.jwt')).toBe(false);
+    expect(syncRouterModels).toHaveBeenCalledWith('user-1', 'id.jwt');
   });
 
   it('does nothing when disabled or for users without an OpenID subject', async () => {

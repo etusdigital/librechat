@@ -17,7 +17,6 @@ export default function ChatSidebarToggle({ className }: { className?: string })
       aria-label={label}
       title={label}
       aria-expanded={expanded}
-      aria-controls="chat-history-nav"
       data-testid="design-chat-sidebar-toggle"
       onClick={() => setSidebarOpen(!expanded)}
       className={className}

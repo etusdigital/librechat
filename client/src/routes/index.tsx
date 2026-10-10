@@ -11,6 +11,7 @@ import {
 import { MarketplaceProvider } from '~/components/Agents/MarketplaceContext';
 import AgentMarketplace from '~/components/Agents/Marketplace';
 import { OAuthSuccess, OAuthError } from '~/components/OAuth';
+import { designRoutes } from '~/components/Design/routes';
 import { AuthContextProvider } from '~/hooks/AuthContext';
 import RouteErrorBoundary from './RouteErrorBoundary';
 import StartupLayout from './Layouts/Startup';
@@ -135,6 +136,7 @@ export const router = createBrowserRouter(
               path: 'c/:conversationId?',
               element: <ChatRoute />,
             },
+            ...designRoutes,
             {
               path: 'search',
               element: <Search />,

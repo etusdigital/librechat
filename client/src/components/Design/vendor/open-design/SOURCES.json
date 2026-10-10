@@ -1,0 +1,12 @@
+{
+  "upstream": "https://github.com/nexu-io/open-design",
+  "commit": "802708f6c9f294347ef777b1fda49b9cbe26ef72",
+  "license": "Apache-2.0",
+  "files": [
+    {
+      "path": "LICENSE",
+      "sha256": "9d95806a26532623360eb84bb17d298f394b55ef73fb4c0796d99b4319b2b0da",
+      "derivedFrom": [{ "path": "LICENSE" }]
+    }
+  ]
+}

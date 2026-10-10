@@ -7,6 +7,11 @@
       "path": "LICENSE",
       "sha256": "9d95806a26532623360eb84bb17d298f394b55ef73fb4c0796d99b4319b2b0da",
       "derivedFrom": [{ "path": "LICENSE" }]
+    },
+    {
+      "path": "source-patches.ts",
+      "sha256": "a7c0689656d56a165866923d787b2e0d233ed9b37e2908b30ea50162f5916cf6",
+      "derivedFrom": [{ "path": "apps/web/src/edit-mode/source-patches.ts" }]
     }
   ]
 }

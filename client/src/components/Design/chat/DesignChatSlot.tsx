@@ -1,10 +1,12 @@
 import { MessagesSquare } from 'lucide-react';
 import type { DesignMe, DesignProjectDetail } from '../api/types';
+import type { PendingBrief } from '../state/pending-brief';
 import { useDesignLocalize } from '../i18n';
 
 export interface DesignChatSlotProps {
   project: DesignProjectDetail;
   me: DesignMe;
+  pendingBrief: PendingBrief;
   composerText: string | null;
   onComposerTextUsed: () => void;
 }

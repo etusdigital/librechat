@@ -15,7 +15,12 @@ export function useSetPendingBrief() {
   );
 }
 
-export function usePendingBrief(projectId: string) {
+export interface PendingBrief {
+  brief: string | null;
+  consume: () => string | null;
+}
+
+export function usePendingBrief(projectId: string): PendingBrief {
   const store = useStore();
   const brief = useAtomValue(pendingBriefAtomFamily(projectId), { store });
   const consume = useCallback(() => {

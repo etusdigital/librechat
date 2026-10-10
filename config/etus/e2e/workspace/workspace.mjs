@@ -60,9 +60,11 @@ const entryOf = (filePath) => {
   };
 };
 const fileList = () => [...files.keys()].map(entryOf);
-const project = () => ({
-  projectId: PROJECT_ID,
-  name: 'Landing Produto X',
+const COPY_ID = 'prj_c5copy';
+const projectNames = new Map([[PROJECT_ID, 'Landing Produto X']]);
+const project = (projectId = PROJECT_ID) => ({
+  projectId,
+  name: projectNames.get(projectId),
   kind: 'prototype',
   designSystemId: 'etus',
   entryFile: 'index.html',
@@ -83,7 +85,7 @@ const bridgeRequests = [];
 
 async function designApi(route) {
   const url = new URL(route.request().url());
-  const rest = url.pathname.replace(/^\/api\/etus\/design\//, '');
+  let rest = url.pathname.replace(/^\/api\/etus\/design\//, '');
   const method = route.request().method();
   if (rest === 'me') {
     return json(route, {
@@ -97,8 +99,28 @@ async function designApi(route) {
   if (rest === 'design-systems/etus') {
     return json(route, { id: 'etus', name: 'Etus' });
   }
-  if (rest === `projects/${PROJECT_ID}` && method === 'GET') {
-    return json(route, project());
+  if (rest === 'projects' && method === 'GET') {
+    const { files: _files, ...summary } = project();
+    return json(route, { items: [summary], nextCursor: null });
+  }
+  if (rest === 'templates') {
+    return json(route, { items: [] });
+  }
+  if (rest === 'design-systems') {
+    return json(route, { items: [], nextCursor: null, total: 0, categories: [] });
+  }
+  const projectMatch = /^projects\/(prj_[a-z0-9]+)$/.exec(rest);
+  if (projectMatch && projectNames.has(projectMatch[1]) && method === 'GET') {
+    return json(route, project(projectMatch[1]));
+  }
+  if (rest === `projects/${PROJECT_ID}/duplicate` && method === 'POST') {
+    projectNames.set(COPY_ID, route.request().postDataJSON().name);
+    const { files: _files, ...copy } = project(COPY_ID);
+    return json(route, copy, 201);
+  }
+  const scoped = /^projects\/(prj_[a-z0-9]+)\/(.+)$/.exec(rest);
+  if (scoped && scoped[1] === COPY_ID) {
+    rest = `projects/${PROJECT_ID}/${scoped[2]}`;
   }
   if (rest === `projects/${PROJECT_ID}/files`) {
     return json(route, { items: fileList() });
@@ -386,6 +408,33 @@ async function desktop(browser) {
   await shot(p, 'desktop-media');
   await axe(p, '1280x800 gaveta e mídia');
   check('1280x800: sem rolagem horizontal com a gaveta aberta', await noHorizontalScroll(p));
+
+  await p.getByRole('button', { name: 'Mais ações' }).click();
+  await p.getByRole('menuitem', { name: 'Duplicar' }).click();
+  const duplicate = p.getByRole('dialog', { name: 'Duplicar projeto' });
+  await duplicate.getByRole('textbox', { name: 'Nome da cópia' }).fill('Landing B');
+  await duplicate.getByRole('button', { name: 'Duplicar' }).click();
+  await p.waitForURL(`${BASE}/design/${COPY_ID}`, { timeout: 15000 });
+  await p.getByRole('heading', { level: 1, name: 'Landing B' }).waitFor({ timeout: 15000 });
+  const copyFrame = await previewFrame(p);
+  check(
+    'Duplicar abre design/:projectId da cópia com a prévia',
+    copyFrame.handle !== null && p.url().endsWith(`/design/${COPY_ID}`),
+    p.url(),
+  );
+
+  await p.goto(`${BASE}/design`);
+  await p
+    .getByRole('link', { name: /Landing Produto X/ })
+    .first()
+    .click();
+  await p.waitForURL(`${BASE}/design/${PROJECT_ID}`, { timeout: 15000 });
+  await p.getByRole('heading', { level: 1, name: 'Landing Produto X' }).waitFor();
+  check(
+    'card do Início abre design/:projectId',
+    p.url().endsWith(`/design/${PROJECT_ID}`),
+    p.url(),
+  );
   await context.close();
 }
 

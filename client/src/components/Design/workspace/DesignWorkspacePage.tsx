@@ -22,6 +22,7 @@ import { useApplyDesignSystemRequest } from './use-apply-design-system';
 import MobileTabBar, { MOBILE_TAB_PANEL_IDS } from './MobileTabBar';
 import DesignAccessGate from '../common/DesignAccessGate';
 import { useProjectChanges } from './use-project-changes';
+import { usePendingBrief } from '../state/pending-brief';
 import ChatResizeHandle from './ChatResizeHandle';
 import WorkspaceHeader from './WorkspaceHeader';
 import DesignPage from '../common/DesignPage';
@@ -57,6 +58,7 @@ export function DesignWorkspace({ project, me }: { project: DesignProjectDetail;
   );
   const entry = project.entryFile;
   const { composerText, clearComposerText } = useApplyDesignSystemRequest();
+  const pendingBrief = usePendingBrief(projectId);
 
   const { revision } = useProjectChanges({
     projectId,
@@ -157,6 +159,7 @@ export function DesignWorkspace({ project, me }: { project: DesignProjectDetail;
             key={projectId}
             project={project}
             me={me}
+            pendingBrief={pendingBrief}
             composerText={composerText}
             onComposerTextUsed={clearComposerText}
           />

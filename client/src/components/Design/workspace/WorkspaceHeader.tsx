@@ -34,17 +34,18 @@ function ProjectName({
   const update = useUpdateDesignProjectMutation(project.projectId);
   const [draft, setDraft] = useState(project.name);
   const inputRef = useRef<HTMLInputElement>(null);
-  const nameRef = useRef(project.name);
-  nameRef.current = project.name;
 
   useEffect(() => {
     if (!editing) {
       return;
     }
-    setDraft(nameRef.current);
+    const input = inputRef.current;
+    input?.focus();
+    input?.select();
     const frame = requestAnimationFrame(() => {
-      inputRef.current?.focus();
-      inputRef.current?.select();
+      if (input && document.activeElement !== input) {
+        input.focus();
+      }
     });
     return () => cancelAnimationFrame(frame);
   }, [editing]);
@@ -153,7 +154,12 @@ export default function WorkspaceHeader({
         <ArrowLeft className="size-5" aria-hidden="true" />
       </Link>
       <div className="flex min-w-0 flex-1 items-center gap-2">
-        <ProjectName project={project} editing={editing} setEditing={setEditing} />
+        <ProjectName
+          key={editing ? 'editing' : 'reading'}
+          project={project}
+          editing={editing}
+          setEditing={setEditing}
+        />
         <DesignSystemControl project={project} />
       </div>
       <div className="flex shrink-0 items-center gap-1" data-testid="design-workspace-actions">

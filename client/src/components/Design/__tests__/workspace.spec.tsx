@@ -1,10 +1,11 @@
-import { Provider as JotaiProvider } from 'jotai';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
+import { createStore, Provider as JotaiProvider } from 'jotai';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import type { DesignMe, DesignProjectDetail, FileEntry } from '../api/types';
 import { DesignWorkspace } from '../workspace/DesignWorkspacePage';
+import { pendingBriefAtomFamily } from '../state/pending-brief';
 import { workspaceApi } from '../api/workspace';
 import { DesignApiError } from '../api/errors';
 import { designApi } from '../api/client';
@@ -18,13 +19,16 @@ jest.mock('../chat/DesignChatSlot', () => ({
   __esModule: true,
   useDesignChatResponding: () => false,
   default: ({
+    pendingBrief,
     composerText,
     onComposerTextUsed,
   }: {
+    pendingBrief: { brief: string | null };
     composerText: string | null;
     onComposerTextUsed: () => void;
   }) => (
     <div data-testid="design-chat-slot">
+      <output data-testid="pending-brief">{pendingBrief.brief ?? ''}</output>
       <output data-testid="composer-text">{composerText ?? ''}</output>
       <button type="button" aria-label="use composer text" onClick={onComposerTextUsed} />
     </div>
@@ -406,6 +410,22 @@ describe('workspace files', () => {
       'href',
       '/design/systems?project=prj_abc',
     );
+  });
+
+  it('hands the brief of a new project from the home dialog to the chat slot', async () => {
+    const store = createStore();
+    store.set(pendingBriefAtomFamily('prj_abc'), 'landing para pequenas empresas');
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <JotaiProvider store={store}>
+          <MemoryRouter initialEntries={['/design/prj_abc']}>
+            <DesignWorkspace project={project} me={me} />
+          </MemoryRouter>
+        </JotaiProvider>
+      </QueryClientProvider>,
+    );
+    expect(screen.getByTestId('pending-brief')).toHaveTextContent('landing para pequenas empresas');
   });
 
   it('hands the apply request from the gallery to the chat and clears the url', async () => {

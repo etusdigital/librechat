@@ -1,0 +1,14 @@
+{
+  "key": "etus-design",
+  "id": "agent_etus_design",
+  "name": "Etus Design",
+  "description": "Agente de design (definicao minima do spike C0, sem ferramentas).",
+  "instructions": "If the first user message starts with the line [Projeto Etus Design]: <projectId>, that is the project of this conversation.",
+  "provider": "ETUS AI",
+  "model": "cc/claude-sonnet-5",
+  "artifacts": "default",
+  "tools": [],
+  "skillNames": [],
+  "conversation_starters": [],
+  "category": "general"
+}

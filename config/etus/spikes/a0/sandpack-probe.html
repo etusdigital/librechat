@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>A0 sandpack static probe</title></head>
+<body>
+<iframe id="preview" style="width:800px;height:400px"></iframe>
+<script type="module">
+import sbs from "https://esm.sh/static-browser-server@1.0.3?cjs-exports=PreviewController";
+const PreviewController = sbs.PreviewController ?? sbs;
+const marker = "ETUS_A0_MARKER_7f3c";
+const html = `<!doctype html><html><head></head><body><h1>${marker}</h1>
+<img id="routerImg" src="https://chat-ai.etus.io/images/000000000000000000000000/a0-probe.png">
+<script>
+  document.getElementById('routerImg').addEventListener('error', () => { parent.postMessage({a0: 'img-error'}, '*'); });
+  document.getElementById('routerImg').addEventListener('load', () => { parent.postMessage({a0: 'img-load'}, '*'); });
+<\/script></body></html>`;
+window.addEventListener('message', (e) => { if (e.data && e.data.a0) window.__img = e.data.a0; });
+const controller = new PreviewController({
+  baseUrl: "https://preview.sandpack-static-server.codesandbox.io",
+  getFileContent: (filepath) => { if (filepath === "/index.html") return html; throw new Error("File not found"); },
+});
+const url = await controller.initPreview();
+window.__previewUrl = url;
+document.getElementById("preview").src = url;
+</script>
+</body>
+</html>

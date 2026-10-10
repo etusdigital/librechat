@@ -178,6 +178,49 @@ describe('applyHubDefaults', () => {
   });
 });
 
+describe('hub-controlled MCP servers', () => {
+  const etus = { type: 'streamable-http', url: 'https://apps.etus.io/mcp' };
+  const yamlWithControlled = deepFreeze({
+    mcpConfig: { github: {}, jira: {} },
+    etusControlledMcpServers: { etus },
+  });
+
+  it('grants a controlled server only to people whose hub values list it', () => {
+    const allowed = applyHubValues(baseConfig(), yamlWithControlled, { mcpServers: ['etus'] });
+    expect(allowed.mcpConfig.etus).toBe(etus);
+    expect(Object.keys(allowed.mcpConfig)).toEqual(['github', 'jira', 'etus']);
+
+    const denied = applyHubValues(baseConfig(), yamlWithControlled, { mcpServers: ['finance'] });
+    expect(denied.mcpConfig.etus).toBeUndefined();
+    expect(Object.keys(denied.mcpConfig)).toEqual(['github', 'jira', 'finance']);
+  });
+
+  it('hides a controlled server when the hub has no answer or no MCP list', async () => {
+    expect(
+      applyHubValues(baseConfig(), yamlWithControlled, { temperature: 1 }).mcpConfig.etus,
+    ).toBe(undefined);
+    getCachedHubValues.mockResolvedValue(null);
+    const appConfig = baseConfig();
+    const result = await applyHubDefaults({
+      appConfig,
+      baseConfig: yamlWithControlled,
+      userId: 'u1',
+    });
+    expect(result.mcpConfig.etus).toBeUndefined();
+  });
+
+  it('grants through applyHubDefaults from the local cache', async () => {
+    isHubEnabled.mockReturnValue(true);
+    getCachedHubValues.mockResolvedValue({ mcpServers: ['etus'] });
+    const result = await applyHubDefaults({
+      appConfig: { mcpConfig: {} },
+      baseConfig: yamlWithControlled,
+      userId: 'u1',
+    });
+    expect(result.mcpConfig).toEqual({ etus });
+  });
+});
+
 const routerSpec = (name, model, extra = {}) => ({
   name,
   label: name,

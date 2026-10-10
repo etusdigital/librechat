@@ -4,7 +4,7 @@ jest.mock('@librechat/data-schemas', () => ({
 jest.mock('~/models', () => ({}));
 jest.mock('../hubClient', () => ({ pushSettingsCatalog: jest.fn() }));
 
-const { buildCatalog, usableModels } = require('../catalog');
+const { buildCatalog, usableModels, catalogMcpServers } = require('../catalog');
 
 const fieldOf = (catalog, key) => catalog.fields.find((field) => field.key === key);
 
@@ -124,5 +124,22 @@ describe('usableModels', () => {
 
   it('keeps everything when no custom endpoint is configured', () => {
     expect(usableModels(models, undefined)).toEqual(models);
+  });
+});
+
+describe('catalogMcpServers', () => {
+  it('offers YAML, hub-controlled and database servers to the hub', () => {
+    const servers = catalogMcpServers(
+      {
+        mcpConfig: { github: { title: 'GitHub' } },
+        etusControlledMcpServers: { etus: { title: 'Apps da Etus' } },
+      },
+      [{ serverName: 'notion', config: { title: 'Notion' } }],
+    );
+    expect(servers).toEqual([
+      { name: 'github', title: 'GitHub' },
+      { name: 'etus', title: 'Apps da Etus' },
+      { name: 'notion', title: 'Notion' },
+    ]);
   });
 });

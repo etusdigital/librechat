@@ -14,15 +14,16 @@ import {
   workspaceTabsAtomFamily,
 } from '../state/atoms';
 import { designErrorCode, designErrorMessageKey, isDesignApiError } from '../api/errors';
-import DesignChatSlot, { useDesignChatResponding } from '../chat/DesignChatSlot';
 import { DesignCardsSkeleton, DesignErrorState } from '../common/DesignStates';
 import { clampChatWidth, readChatWidth, storeChatWidth } from './chat-width';
 import { useDesignFilesQuery, useDesignProjectQuery } from '../api/queries';
 import { useApplyDesignSystemRequest } from './use-apply-design-system';
 import MobileTabBar, { MOBILE_TAB_PANEL_IDS } from './MobileTabBar';
+import { useIsResponding } from '../chat/DesignChatAdapter';
 import DesignAccessGate from '../common/DesignAccessGate';
 import { useProjectChanges } from './use-project-changes';
 import { usePendingBrief } from '../state/pending-brief';
+import DesignChatSlot from '../chat/DesignChatSlot';
 import ChatResizeHandle from './ChatResizeHandle';
 import WorkspaceHeader from './WorkspaceHeader';
 import DesignPage from '../common/DesignPage';
@@ -44,7 +45,7 @@ export function DesignWorkspace({ project, me }: { project: DesignProjectDetail;
   const localize = useDesignLocalize();
   const projectId = project.projectId;
   const compact = useMediaQuery(COMPACT_LAYOUT_QUERY);
-  const responding = useDesignChatResponding();
+  const responding = useIsResponding();
   const [tabs, setTabs] = useAtom(workspaceTabsAtomFamily(projectId));
   const [device, setDevice] = useAtom(deviceAtom);
   const [mobileTab, setMobileTab] = useState<MobileTab>('chat');

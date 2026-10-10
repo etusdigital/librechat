@@ -127,6 +127,11 @@ export const designApi = {
       json: { conversationId },
     }),
 
+  projectOfConversation: (conversationId: string, signal?: AbortSignal) =>
+    designJson<t.DesignProject>(designPath('conversations', conversationId, 'project'), {
+      signal,
+    }),
+
   listFiles: (projectId: string, since?: string, signal?: AbortSignal) =>
     designJson<{ items: t.FileEntry[] }>(projectPath(projectId, 'files'), {
       query: { since },

@@ -97,7 +97,6 @@
       "resize_chat": "Ajustar a largura do chat"
     },
     "chat": {
-      "placeholder": "O chat com o agente Etus Design aparece aqui.",
       "apply_design_system": "Aplique o design system {{name}}"
     },
     "header": {
@@ -393,5 +392,11 @@
     "cancel": "Cancelar",
     "close": "Fechar",
     "sample_glyphs": "Aa"
+  },
+  "chat": {
+    "loading": "Abrindo a conversa do projeto",
+    "read_only": "Você pode ver este projeto, mas não editar. A conversa com o agente fica com quem pode editar.",
+    "first_message_default": "Vamos trabalhar neste projeto.",
+    "next_steps_label": "Próximos passos sugeridos"
   }
 }

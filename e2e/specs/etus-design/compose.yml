@@ -1,0 +1,219 @@
+name: etus-design-e2e
+
+x-design-images:
+  service: &design-service-image ${ETUS_DESIGN_SERVICE_IMAGE:-etus-design-e2e/design-service:local}
+  renderer: &design-renderer-image ${ETUS_DESIGN_RENDERER_IMAGE:-etus-design-e2e/design-renderer:local}
+  egress: &design-egress-image ${ETUS_DESIGN_EGRESS_IMAGE:-etus-design-e2e/design-egress:local}
+
+x-test-secrets: &test-secrets
+  PREVIEW_TOKEN_SECRET: e2e-only-preview-secret-not-for-production
+  RENDERER_SECRET: e2e-only-renderer-secret-not-for-production
+
+services:
+  init:
+    build: edge
+    image: etus-design-e2e/edge:local
+    command: ['/init.sh']
+    volumes:
+      - certs:/certs
+      - state:/state
+
+  mongodb:
+    image: mongo:8.0@sha256:d0d926f94df099bff534b7ee5b5986458131a22489dfff8664509af0c1e2ca9c
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand("ping").ok']
+      interval: 2s
+      timeout: 5s
+      retries: 60
+
+  fake-idp-hub:
+    image: node:24.16.0-alpine
+    command: ['node', '/suite/services/fake-idp-hub.mjs']
+    volumes:
+      - ./services:/suite/services:ro
+
+  fake-llm:
+    image: node:24.16.0-alpine
+    command: ['node', '/suite/services/fake-llm.mjs']
+    volumes:
+      - ./services:/suite/services:ro
+
+  edge:
+    image: etus-design-e2e/edge:local
+    volumes:
+      - certs:/certs:ro
+    networks:
+      default:
+        aliases: [chat.etus.test, idp.etus.test, hub.etus.test]
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'wget',
+          '-q',
+          '-O',
+          '/dev/null',
+          '--no-check-certificate',
+          '--header',
+          'Host: idp.etus.test',
+          'https://127.0.0.1/.well-known/openid-configuration',
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 60
+    depends_on:
+      init:
+        condition: service_completed_successfully
+      fake-idp-hub:
+        condition: service_started
+
+  api:
+    image: ${CHAT_IMAGE:-etus-design-e2e/librechat:local}
+    entrypoint: ['/suite/services/chat-entrypoint.sh']
+    command: ['node', 'api/server/index.js']
+    env_file: chat.env
+    volumes:
+      - ./librechat.e2e.yaml:/app/librechat.yaml:ro
+      - ./services:/suite/services:ro
+      - certs:/certs:ro
+      - state:/state:ro
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3080/health']
+      interval: 3s
+      timeout: 5s
+      retries: 100
+    depends_on:
+      init:
+        condition: service_completed_successfully
+      mongodb:
+        condition: service_healthy
+      edge:
+        condition: service_healthy
+
+  seed-agent:
+    image: ${CHAT_IMAGE:-etus-design-e2e/librechat:local}
+    entrypoint: ['/suite/services/chat-entrypoint.sh']
+    command: ['/suite/services/seed-agent.sh']
+    env_file: chat.env
+    environment:
+      SEED_AUTHOR_EMAIL: ana@etus.test
+    volumes:
+      - ./services:/suite/services:ro
+      - state:/state
+    depends_on:
+      api:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:1.28-alpine@sha256:a8b39bd9cf0f83869a2162827a0caf6137ddf759d50a171451b335cecc87d236
+    command: ['sh', '-c', "exec nginx -g 'daemon off;' >> /logs/nginx.log 2>&1"]
+    volumes:
+      - ${ETUS_DESIGN_DIR:?set ETUS_DESIGN_DIR to the etus-design checkout}/design-service/deploy/nginx:/etc/nginx/conf.d:ro
+      - nginx-logs:/logs
+    depends_on:
+      api:
+        condition: service_started
+
+  design-service:
+    image: *design-service-image
+    environment:
+      <<: *test-secrets
+      MONGO_URI: mongodb://mongodb:27017/etus_design
+      ETUS_HUB_URL: https://hub.etus.test
+      ETUS_HUB_SERVICE_KEY: e2e-design-service-key
+      ETUS_DESIGN_ROUTER_KEY: e2e-unused
+      ETUS_ROUTER_URL: https://router.etus.test
+      PREVIEW_BASE_URL: https://chat.etus.test/preview
+      PREVIEW_INTERNAL_URL: http://design-service:8081/preview
+      RENDERER_URL: http://design-renderer:8090
+      STORAGE_FS_ROOT: /data/etus-design
+      NODE_EXTRA_CA_CERTS: /certs/ca.crt
+      LOG_LEVEL: warn
+    volumes:
+      - design-data:/data/etus-design
+      - certs:/certs:ro
+    networks: [default, render_net]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      edge:
+        condition: service_healthy
+      design-renderer:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:8080/v1/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))",
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 60
+
+  design-renderer:
+    image: *design-renderer-image
+    environment:
+      RENDERER_SECRET: e2e-only-renderer-secret-not-for-production
+      EGRESS_PROXY: http://egress-proxy:4750
+      PREVIEW_INTERNAL_URL: http://design-service:8081/preview
+    networks: [render_net]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    mem_limit: 2g
+    pids_limit: 512
+    depends_on: [egress-proxy]
+
+  egress-proxy:
+    image: *design-egress-image
+    networks: [default, render_net]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+
+  tests:
+    build:
+      context: .
+      dockerfile: tests.Dockerfile
+    image: etus-design-e2e/tests:local
+    command: ['sh', '/opt/e2e/suite/run-in-container.sh']
+    environment:
+      CI: ${CI:-}
+      E2E_WORKERS: ${E2E_WORKERS:-}
+      E2E_GREP: ${E2E_GREP:-}
+      E2E_PROJECTS: ${E2E_PROJECTS:-}
+    shm_size: 1gb
+    volumes:
+      - .:/opt/e2e/suite:ro
+      - ${E2E_RESULTS_DIR:-./.results}:/results
+      - certs:/certs:ro
+      - state:/state:ro
+      - nginx-logs:/logs:ro
+    depends_on:
+      api:
+        condition: service_healthy
+      nginx:
+        condition: service_started
+      design-service:
+        condition: service_healthy
+      seed-agent:
+        condition: service_started
+      fake-llm:
+        condition: service_started
+
+networks:
+  render_net:
+    internal: true
+
+volumes:
+  certs:
+  state:
+  nginx-logs:
+  design-data:

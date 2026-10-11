@@ -1,0 +1,144 @@
+name: Etus Design e2e
+
+# Runs the Design screen suite (e2e/specs/etus-design) against the chat image built from the PR and
+# the production nginx, design-service, renderer and egress of etus-design, built from the commit
+# pinned in e2e/specs/etus-design/etus-design.ref. ETUS_DESIGN_READ_TOKEN must read the private
+# evolution-foundation/etus-design repository.
+on:
+  pull_request:
+    branches: [etus]
+    paths:
+      - 'client/src/components/Design/**'
+      - 'client/src/locales/*/etus-design.json'
+      - 'config/etus/**'
+      - 'e2e/specs/etus-design/**'
+      - '.github/workflows/etus-design-e2e.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: etus-design-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Touchpoints and Design unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch the upstream base for the touchpoints check
+        run: git fetch --no-tags origin main:refs/remotes/origin/main
+
+      - name: C-1 upstream touchpoints
+        run: node config/etus/check-upstream-touchpoints.js --base origin/main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build:packages
+
+      - name: Design unit tests (C-3, C-13, C-14 and the layout)
+        working-directory: client
+        run: npx jest src/components/Design
+
+  e2e:
+    name: Design e2e (Chromium, Firefox, WebKit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      ETUS_DESIGN_READ_TOKEN: ${{ secrets.ETUS_DESIGN_READ_TOKEN }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Require the etus-design read token
+        if: env.ETUS_DESIGN_READ_TOKEN == ''
+        run: |
+          echo "::error::Configure the ETUS_DESIGN_READ_TOKEN secret (read access to evolution-foundation/etus-design)."
+          exit 1
+
+      - name: Pinned etus-design commit
+        id: design
+        run: echo "ref=$(tr -d '[:space:]' < e2e/specs/etus-design/etus-design.ref)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          repository: evolution-foundation/etus-design
+          ref: ${{ steps.design.outputs.ref }}
+          token: ${{ env.ETUS_DESIGN_READ_TOKEN }}
+          path: .etus-design
+
+      - name: Log in to Docker Hub so base image pulls skip the anonymous rate limit
+        continue-on-error: true
+        if: env.DOCKERHUB_USERNAME != ''
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build the design-service image from the pinned commit
+        uses: docker/build-push-action@v6
+        with:
+          context: .etus-design
+          file: .etus-design/design-service/Dockerfile
+          load: true
+          tags: etus-design-e2e/design-service:local
+          cache-from: type=gha,scope=etus-design-service
+          cache-to: type=gha,mode=max,scope=etus-design-service
+
+      - name: Build the renderer image from the pinned commit
+        uses: docker/build-push-action@v6
+        with:
+          context: .etus-design
+          file: .etus-design/design-service/renderer/Dockerfile
+          load: true
+          tags: etus-design-e2e/design-renderer:local
+          cache-from: type=gha,scope=etus-design-renderer
+          cache-to: type=gha,mode=max,scope=etus-design-renderer
+
+      - name: Build the egress image from the pinned commit
+        uses: docker/build-push-action@v6
+        with:
+          context: .etus-design/design-service/egress
+          load: true
+          tags: etus-design-e2e/design-egress:local
+          cache-from: type=gha,scope=etus-design-egress
+          cache-to: type=gha,mode=max,scope=etus-design-egress
+
+      - name: Build the chat image of this PR
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          load: true
+          tags: etus-design-e2e/librechat:local
+          build-args: |
+            VITE_ETUS_HUB_URL=https://hub.etus.test
+          cache-from: type=gha,scope=etus-design-e2e
+          cache-to: type=gha,mode=max,scope=etus-design-e2e
+
+      - name: Run the suite
+        env:
+          ETUS_DESIGN_DIR: ${{ github.workspace }}/.etus-design
+          E2E_SKIP_BUILD: '1'
+          E2E_RESULTS_DIR: ${{ github.workspace }}/etus-design-e2e-results
+        run: e2e/specs/etus-design/run.sh
+
+      - name: Keep the report, traces and service logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: etus-design-e2e
+          path: etus-design-e2e-results
+          retention-days: 14

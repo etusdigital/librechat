@@ -117,7 +117,9 @@ function KindStep({
                 <span className="text-sm font-semibold text-text-primary">
                   {localize(PROJECT_KIND_KEYS[kind])}
                 </span>
-                <span className="text-xs text-text-secondary">
+                <span
+                  className={cn('text-xs', checked ? 'text-text-primary' : 'text-text-secondary')}
+                >
                   {localize(KIND_DESCRIPTION_KEYS[kind])}
                 </span>
               </span>

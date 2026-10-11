@@ -60,7 +60,7 @@ export function ProjectCard({
     <li className="min-w-0">
       <Link
         to={designProjectPath(project.projectId)}
-        className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border-light bg-surface-secondary no-underline transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
+        className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border-light bg-surface-primary no-underline transition-colors hover:bg-surface-secondary-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary"
       >
         <ProjectThumbnail project={project} system={system} />
         <span className="flex min-w-0 flex-1 flex-col gap-1 border-t border-border-light p-4">

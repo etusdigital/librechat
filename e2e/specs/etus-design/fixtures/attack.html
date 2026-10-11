@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>C-2 attack page</title>
+  </head>
+  <body>
+    <h1>C-2 attack page</h1>
+    <iframe name="sink" title="sink" width="10" height="10"></iframe>
+    <pre id="results">pending</pre>
+    <script>
+      const mode = window.top !== window ? 'frame' : 'tab';
+      const results = {};
+      const probePath = (vector) => `/api/c2probe/${mode}/${vector}`;
+      const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+      const describe = (error) => `blocked:${(error && error.name) || 'Error'}`;
+
+      async function probe(name, run) {
+        try {
+          results[name] = await Promise.race([
+            Promise.resolve().then(run),
+            sleep(4000).then(() => 'blocked:timeout'),
+          ]);
+        } catch (error) {
+          results[name] = describe(error);
+        }
+      }
+
+      async function main() {
+        const framed = mode === 'frame';
+        await probe('readCookie', () => `value:${document.cookie}`);
+        await probe(
+          'localStorage',
+          () => `value:${localStorage.length}:${Object.keys(localStorage).join(',')}`,
+        );
+        await probe('sessionStorage', () => `value:${sessionStorage.length}`);
+        await probe(
+          'indexedDB',
+          () =>
+            new Promise((resolve) => {
+              const request = indexedDB.open('librechat');
+              request.onsuccess = () => resolve('opened');
+              request.onerror = () => resolve('blocked:error');
+            }),
+        );
+        if (framed) {
+          await probe('parentDocument', () => `value:${parent.document.cookie}`);
+          await probe('parentStorage', () => `value:${parent.localStorage.length}`);
+        }
+        await probe('fetchConvos', async () => {
+          const response = await fetch('/api/convos', { credentials: 'include' });
+          return `status:${response.status}:${(await response.text()).slice(0, 80)}`;
+        });
+        await probe('fetchUser', async () => {
+          const response = await fetch('/api/user', { credentials: 'include' });
+          return `status:${response.status}:${(await response.text()).slice(0, 80)}`;
+        });
+        await probe(
+          'xhr',
+          () =>
+            new Promise((resolve) => {
+              const xhr = new XMLHttpRequest();
+              xhr.withCredentials = true;
+              xhr.onload = () => resolve(`status:${xhr.status}`);
+              xhr.onerror = () => resolve('blocked:error');
+              xhr.open('GET', probePath('xhr'));
+              xhr.send();
+            }),
+        );
+        await probe('sendBeacon', () => `sent:${navigator.sendBeacon(probePath('beacon'), 'x')}`);
+        await probe('form', async () => {
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = '/api/auth/logout';
+          form.target = 'sink';
+          document.body.appendChild(form);
+          form.submit();
+          await sleep(1500);
+          return 'submitted';
+        });
+        await probe(
+          'imageApi',
+          () =>
+            new Promise((resolve) => {
+              const image = new Image();
+              image.onload = () => resolve('loaded');
+              image.onerror = () => resolve('blocked:error');
+              image.src = probePath('img');
+            }),
+        );
+        await probe(
+          'imageImages',
+          () =>
+            new Promise((resolve) => {
+              const image = new Image();
+              image.onload = () => resolve('loaded');
+              image.onerror = () => resolve('blocked:error');
+              image.src = `/images/c2probe-${mode}.png`;
+            }),
+        );
+        await probe('serviceWorker', () =>
+          navigator.serviceWorker?.controller ? 'value:controlled' : 'value:none',
+        );
+        if (framed) {
+          await probe('windowOpen', () => `opened:${window.open(probePath('open')) !== null}`);
+          await probe('topNavigation', () => {
+            top.location.href = probePath('top');
+            return 'navigated';
+          });
+        }
+        await sleep(1000);
+        document.getElementById('results').textContent = JSON.stringify(results);
+        document.body.dataset.done = '1';
+      }
+
+      main();
+    </script>
+  </body>
+</html>

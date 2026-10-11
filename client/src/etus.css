@@ -50,7 +50,7 @@ html,
   --header-primary: var(--etus-paper);
   --header-hover: 235 233 229;
   --text-primary: var(--etus-ink);
-  --text-secondary: 110 109 104;
+  --text-secondary: 100 99 95;
   --text-secondary-alt: 138 137 132;
   --text-tertiary: 110 109 104;
   --border-light: 214 212 209;
@@ -98,7 +98,7 @@ html,
 }
 
 /* The sidebar resize handle keeps a text-colored focus ring after a drag; a border tone reads as part of the layout. */
-[role="separator"]:focus-visible,
+[role='separator']:focus-visible,
 .cursor-col-resize:focus-visible {
   --tw-ring-color: rgb(var(--border-heavy));
 }

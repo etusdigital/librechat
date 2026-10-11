@@ -1,6 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
 import { expectNoRawKeys, expectTheme, seriousViolations, useTheme } from './support/axe';
-import { noHorizontalScroll, openWorkspace, waitForPreview } from './support/workspace';
+import {
+  collapseChatMenu,
+  noHorizontalScroll,
+  openWorkspace,
+  waitForPreview,
+} from './support/workspace';
 import { DesignApi, gotoPath, loginAs, newProject } from './support/session';
 import { landingPage } from './fixtures/pages';
 import { agent } from './support/mcp';
@@ -39,7 +44,9 @@ test('D-3: the Plan panel opens and checks the steps off as the agent moves on, 
   await expect(planPanel(page)).toBeVisible(IDLE_POLL);
   await expect(button).toHaveAttribute('aria-expanded', 'true');
   await expect(planPanel(page).getByText('Editorial sóbrio')).toBeVisible();
-  await expect(steps(page)).toHaveText(STEPS.map((title) => new RegExp(`^${title}`)));
+  await expect(steps(page)).toHaveText(
+    STEPS.map((title, index) => new RegExp(`^${index + 1}\\. ${title}A fazer$`)),
+  );
   expect(await statuses(page)).toEqual(['pending', 'pending', 'pending', 'pending']);
   await expect(page.getByTestId('design-plan-announcement')).toHaveText('Novo plano com 4 etapas.');
 
@@ -78,6 +85,7 @@ test('D-3 tablet, dark: the Plan panel fits the tablet and passes axe', async ({
   const saved = await agent(request).savePlan(project.projectId, STEPS);
   await agent(request).updateItem(saved.planId, 'i1', 'in_progress');
   await gotoPath(page, `/design/${project.projectId}`);
+  await collapseChatMenu(page);
   await waitForPreview(page);
   await expectTheme(page, 'dark');
 

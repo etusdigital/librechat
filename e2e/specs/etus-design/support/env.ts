@@ -6,6 +6,6 @@ export const NGINX_LOG = '/logs/nginx.log';
 export const STATE_DIR = '/state';
 export const PROJECT_LINE_PREFIX = '[Projeto Etus Design]: ';
 
-export type Persona = 'ana' | 'bia' | 'carla' | 'davi';
+export type Persona = 'ana' | 'bia' | 'carla' | 'davi' | 'eva';
 export const emailOf = (persona: Persona) => `${persona}@etus.test`;
 export const subOf = (persona: Persona) => `logto-${persona}`;

@@ -30,6 +30,7 @@ export const PERSONAS = {
   bia: { name: 'Bia Colaboradora', permissions: COLLABORATOR },
   carla: { name: 'Carla Admin', permissions: ADMIN },
   davi: { name: 'Davi Sem Acesso', permissions: [] },
+  eva: { name: 'Eva Sem Júri', permissions: ['projects.use'] },
 };
 
 const emailOf = (persona) => `${persona}@etus.test`;

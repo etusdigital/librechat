@@ -35,14 +35,14 @@ export default function WorkspaceHeaderActions({
   const menuItems: MenuItemProps[] = [];
   if (compact) {
     menuItems.push({
-      id: 'design-plan-panel',
+      id: 'design-plan-menu',
       label: localize('plan.title'),
       icon: <ListChecks className="icon-sm" aria-hidden="true" />,
       onClick: togglePlan,
     });
     if (jury.enabled) {
       menuItems.push({
-        id: 'design-jury-panel',
+        id: 'design-jury-menu',
         label: localize('jury.button'),
         icon: <Gavel className="icon-sm" aria-hidden="true" />,
         onClick: toggleJury,

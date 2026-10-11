@@ -116,7 +116,7 @@ test('D jury mobile, dark: the review opens from the menu, stacks under the prev
 });
 
 test('D jury: hidden and refused without review.jury', async ({ page }) => {
-  await loginAs(page, 'bia');
+  await loginAs(page, 'eva');
   const api = new DesignApi(page.context());
   const project = await newProject(api, 'Júri sem permissão', {
     'index.html': lowContrastPage(),

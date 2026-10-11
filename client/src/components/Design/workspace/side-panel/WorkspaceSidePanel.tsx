@@ -61,7 +61,13 @@ export default function WorkspaceSidePanel({
           <X className="size-4" aria-hidden="true" />
         </button>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
+      <div
+        tabIndex={0}
+        data-testid="design-side-panel-body"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-text-primary"
+      >
+        {children}
+      </div>
     </aside>
   );
 }

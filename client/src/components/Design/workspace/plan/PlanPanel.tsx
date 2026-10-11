@@ -69,6 +69,7 @@ function PlanBody({ plan }: { plan: DesignPlan }) {
         {plan.items.map((item, index) => {
           const { icon: Icon, key } = STATUS[item.status] ?? STATUS.pending;
           const current = item.status === 'in_progress';
+          const muted = current ? 'text-text-primary' : 'text-text-secondary';
           return (
             <li
               key={item.id}
@@ -98,9 +99,9 @@ function PlanBody({ plan }: { plan: DesignPlan }) {
                   <span className="sr-only">{`${index + 1}. `}</span>
                   {item.title}
                 </span>
-                <span className="text-xs text-text-secondary">{localize(key)}</span>
+                <span className={cn('text-xs', muted)}>{localize(key)}</span>
                 {item.note ? (
-                  <span className="whitespace-pre-line break-words text-xs text-text-secondary">
+                  <span className={cn('whitespace-pre-line break-words text-xs', muted)}>
                     {item.note}
                   </span>
                 ) : null}

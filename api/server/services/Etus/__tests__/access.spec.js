@@ -15,6 +15,7 @@ jest.mock('../groups', () => ({
 }));
 jest.mock('../routerModels', () => ({ syncRouterModels: jest.fn(async () => true) }));
 jest.mock('../skillActivation', () => ({ syncHubSkills: jest.fn() }));
+jest.mock('../design/agentAccess', () => ({ syncDesignAgents: jest.fn(async () => null) }));
 jest.mock('~/models', () => ({
   getUserById: jest.fn(),
   updateUser: jest.fn(),
@@ -26,9 +27,10 @@ const { writeUserSettings } = require('../settingsCache');
 const { syncHubGroups } = require('../groups');
 const { syncRouterModels } = require('../routerModels');
 const { syncHubSkills } = require('../skillActivation');
+const { syncDesignAgents } = require('../design/agentAccess');
 const db = require('~/models');
 const { SystemRoles } = require('librechat-data-provider');
-const { syncHubAccess, sanitizeValues, hubRoleFor } = require('../access');
+const { syncHubAccess, refreshDelegatedAccess, sanitizeValues, hubRoleFor } = require('../access');
 
 const user = { _id: { toString: () => 'user-1' }, openidId: 'sub-1' };
 
@@ -111,6 +113,12 @@ describe('syncHubAccess', () => {
     fetchUserSettings.mockResolvedValue({ active: true, groups: [], values: {} });
     expect(await syncHubAccess(user, 'id.jwt')).toBe(true);
     expect(syncRouterModels).toHaveBeenCalledWith('user-1', 'id.jwt');
+  });
+
+  it('syncs the design agents with the login id token, ignoring the throttle', async () => {
+    fetchUserSettings.mockResolvedValue({ active: true, groups: [], values: {} });
+    await syncHubAccess(user, 'id.jwt');
+    expect(syncDesignAgents).toHaveBeenCalledWith('user-1', 'id.jwt', { force: true });
   });
 
   it('refreshes the router model list even when the hub is disabled', async () => {
@@ -212,5 +220,13 @@ describe('sanitizeValues', () => {
     });
     expect(sanitizeValues({ temperature: Number.NaN })).toEqual({});
     expect(sanitizeValues(null)).toEqual({});
+  });
+});
+
+describe('refreshDelegatedAccess', () => {
+  it('renews the router models and the design agents with the refreshed id token', async () => {
+    await refreshDelegatedAccess('user-1', 'id.jwt');
+    expect(syncRouterModels).toHaveBeenCalledWith('user-1', 'id.jwt');
+    expect(syncDesignAgents).toHaveBeenCalledWith('user-1', 'id.jwt');
   });
 });

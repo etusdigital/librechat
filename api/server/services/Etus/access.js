@@ -5,6 +5,7 @@ const { readUserSettings, writeUserSettings } = require('./settingsCache');
 const { memberKeyOf, syncHubGroups } = require('./groups');
 const { syncRouterModels } = require('./routerModels');
 const { syncHubSkills } = require('./skillActivation');
+const { syncDesignAgents } = require('./design/agentAccess');
 const db = require('~/models');
 
 const SETTING_KEYS = [
@@ -116,11 +117,17 @@ async function syncHubSettings(user) {
 }
 
 async function syncHubAccess(user, idToken) {
+  const userId = user?._id?.toString();
   const [synced] = await Promise.all([
     syncHubSettings(user),
-    syncRouterModels(user?._id?.toString(), idToken),
+    syncRouterModels(userId, idToken),
+    syncDesignAgents(userId, idToken, { force: true }),
   ]);
   return synced;
+}
+
+async function refreshDelegatedAccess(userId, idToken) {
+  await Promise.all([syncRouterModels(userId, idToken), syncDesignAgents(userId, idToken)]);
 }
 
 async function getCachedHubValues(userId) {
@@ -132,6 +139,7 @@ module.exports = {
   sanitizeValues,
   hubRoleFor,
   refreshHubAccess,
+  refreshDelegatedAccess,
   syncHubAccess,
   getCachedHubValues,
 };

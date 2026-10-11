@@ -420,7 +420,9 @@ module.exports = {
   FORWARDED_REQUEST_HEADERS,
   PASSTHROUGH_ETUS_HEADERS,
   createDesignProxy,
+  currentIdToken,
   getDesignProxyConfig,
+  personKeyOf,
   targetUrl,
   designProxy: createDesignProxy(),
 };

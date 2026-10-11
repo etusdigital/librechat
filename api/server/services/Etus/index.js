@@ -6,6 +6,7 @@ const { applyHubDefaults } = require('./defaults');
 const { pushCatalog } = require('./catalog');
 const { isModelFilterEnabled, refreshStaleModels } = require('./routerModels');
 const { syncHubShares } = require('./shares');
+const { refreshDesignAgents } = require('./design/agentAccess');
 
 const DEFAULT_INTERVAL_MS = 5 * 60 * 1000;
 const MIN_INTERVAL_MS = 30 * 1000;
@@ -34,6 +35,7 @@ async function refreshStaleUsers(intervalMs, now = Date.now()) {
       continue;
     }
     await refreshHubAccess({ ...seen, background: true });
+    await refreshDesignAgents(seen.userId);
   }
 }
 

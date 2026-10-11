@@ -50,7 +50,7 @@ export function errorDetailsOf(body: Record<string, unknown>) {
   return Object.keys(merged).length > 0 ? merged : null;
 }
 
-async function errorOf(response: Response) {
+export async function errorOf(response: Response) {
   let payload: unknown = null;
   try {
     payload = await response.json();

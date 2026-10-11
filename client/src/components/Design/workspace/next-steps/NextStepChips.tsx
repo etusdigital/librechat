@@ -4,24 +4,36 @@ import {
   useIsResponding,
   useLastAssistantMessage,
 } from '../../chat/DesignChatAdapter';
+import { useWorkspacePanel } from '../side-panel/use-workspace-panel';
 import { parseNextSteps } from './parse-next-steps';
+import { isJuryStep } from '../jury/jury-state';
 import { useDesignLocalize } from '../../i18n';
+import { useJury } from '../jury/use-jury';
 
 export default function NextStepChips({ conversationId }: { conversationId: string | null }) {
   const localize = useDesignLocalize();
   const lastMessage = useLastAssistantMessage(conversationId);
   const responding = useIsResponding();
   const { insertIntoComposer, sendMessage } = useDesignChatActions();
+  const jury = useJury();
+  const { open: openPanel } = useWorkspacePanel();
   const steps = useMemo(() => parseNextSteps(lastMessage?.text), [lastMessage?.text]);
 
   const choose = useCallback(
     async (step: string) => {
+      if (jury.enabled && jury.reviewPath && isJuryStep(step)) {
+        openPanel('jury');
+        if (!jury.busy) {
+          jury.start(jury.reviewPath);
+        }
+        return;
+      }
       if (await sendMessage(step)) {
         return;
       }
       await insertIntoComposer(step);
     },
-    [insertIntoComposer, sendMessage],
+    [insertIntoComposer, jury, openPanel, sendMessage],
   );
 
   if (steps.length === 0) {

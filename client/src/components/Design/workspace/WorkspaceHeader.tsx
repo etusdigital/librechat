@@ -172,6 +172,7 @@ export default function WorkspaceHeader({
           project={project}
           activePath={activePath}
           device={device}
+          compact={compact}
           onRename={() => setEditing(true)}
         />
       </div>

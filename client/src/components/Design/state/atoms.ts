@@ -57,3 +57,15 @@ export const deviceAtom = atom<DeviceId>('desktop');
 export const zoomAtom = atom<ZoomLevel>('fit');
 export const workspaceModeAtom = atom<WorkspaceMode>('view');
 export const selectedCommentIdAtom = atom<string | null>(null);
+
+export const WORKSPACE_PANELS = ['plan', 'jury'] as const;
+export type WorkspacePanel = (typeof WORKSPACE_PANELS)[number];
+export const workspacePanelAtom = atom<WorkspacePanel | null>(null);
+
+export interface PreviewHighlight {
+  id: number;
+  path: string;
+  selector: string;
+}
+
+export const previewHighlightAtom = atom<PreviewHighlight | null>(null);

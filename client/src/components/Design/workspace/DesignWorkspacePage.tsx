@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useAtom } from 'jotai';
 import { SearchX } from 'lucide-react';
+import { useAtom, useSetAtom } from 'jotai';
 import { useParams } from 'react-router-dom';
 import { useMediaQuery } from '@librechat/client';
 import type { ReactNode } from 'react';
@@ -12,27 +12,37 @@ import {
   deviceAtom,
   keepExistingTabs,
   openTab,
+  previewHighlightAtom,
+  workspacePanelAtom,
   workspaceTabsAtomFamily,
 } from '../state/atoms';
+import { SIDE_PANEL_IDS, useExclusiveWorkspacePanels } from './side-panel/use-workspace-panel';
 import { designErrorCode, designErrorMessageKey, isDesignApiError } from '../api/errors';
 import { DesignCardsSkeleton, DesignErrorState } from '../common/DesignStates';
 import { clampChatWidth, readChatWidth, storeChatWidth } from './chat-width';
 import { useDesignFilesQuery, useDesignProjectQuery } from '../api/queries';
 import { useApplyDesignSystemRequest } from './use-apply-design-system';
 import MobileTabBar, { MOBILE_TAB_PANEL_IDS } from './MobileTabBar';
+import WorkspaceSidePanel from './side-panel/WorkspaceSidePanel';
+import { COMPACT_LAYOUT_QUERY, modePanelLayout } from './layout';
+import { hasDesignPermission, useDesignAccess } from '../access';
 import { useIsResponding } from '../chat/DesignChatAdapter';
+import { usePlanActivity } from './plan/use-plan-activity';
 import DesignAccessGate from '../common/DesignAccessGate';
 import { useProjectChanges } from './use-project-changes';
 import { WorkspaceTabsProvider } from './workspace-tabs';
 import { usePendingBrief } from '../state/pending-brief';
 import DesignChatSlot from '../chat/DesignChatSlot';
+import { useElementSize } from './use-element-size';
 import ChatResizeHandle from './ChatResizeHandle';
-import { COMPACT_LAYOUT_QUERY } from './layout';
+import { reviewPathOf } from './jury/jury-state';
 import WorkspaceHeader from './WorkspaceHeader';
+import { JuryProvider } from './jury/use-jury';
 import DesignPage from '../common/DesignPage';
-import { useDesignAccess } from '../access';
 import { useDesignLocalize } from '../i18n';
 import { DESIGN_HOME_PATH } from '../paths';
+import JuryPanel from './jury/JuryPanel';
+import PlanPanel from './plan/PlanPanel';
 import FileDrawer from './FileDrawer';
 import FileTabs from './FileTabs';
 import FileView from './FileView';
@@ -63,6 +73,13 @@ export function DesignWorkspace({ project, me }: { project: DesignProjectDetail;
   const entry = project.entryFile;
   const { composerText, clearComposerText } = useApplyDesignSystemRequest();
   const pendingBrief = usePendingBrief(projectId);
+
+  const [panel, setPanel] = useAtom(workspacePanelAtom);
+  const setHighlight = useSetAtom(previewHighlightAtom);
+  const [areaRef, area] = useElementSize<HTMLDivElement>();
+  const juryEnabled = hasDesignPermission(me, 'review.jury');
+  useExclusiveWorkspacePanels();
+  const planAnnouncement = usePlanActivity({ projectId, compact, responding });
 
   const { revision } = useProjectChanges({
     projectId,
@@ -95,6 +112,7 @@ export function DesignWorkspace({ project, me }: { project: DesignProjectDetail;
   );
   const activePath = tabs.active && openTabs.includes(tabs.active) ? tabs.active : entry;
   const activeFile = files.find((file) => file.path === activePath);
+  const reviewPath = reviewPathOf(files, activePath, entry);
 
   const openFile = useCallback(
     (path: string) => {
@@ -138,6 +156,37 @@ export function DesignWorkspace({ project, me }: { project: DesignProjectDetail;
     },
     [compact],
   );
+
+  const closePanel = useCallback(() => {
+    setPanel(null);
+    setHighlight(null);
+  }, [setHighlight, setPanel]);
+
+  const sideLayout = modePanelLayout(compact, area.width);
+  let sidePanel: ReactNode = null;
+  if (panel === 'plan') {
+    sidePanel = (
+      <WorkspaceSidePanel
+        id={SIDE_PANEL_IDS.plan}
+        title={localize('plan.title')}
+        layout={sideLayout}
+        onClose={closePanel}
+      >
+        <PlanPanel projectId={projectId} />
+      </WorkspaceSidePanel>
+    );
+  } else if (panel === 'jury' && juryEnabled) {
+    sidePanel = (
+      <WorkspaceSidePanel
+        id={SIDE_PANEL_IDS.jury}
+        title={localize('jury.title')}
+        layout={sideLayout}
+        onClose={closePanel}
+      >
+        <JuryPanel projectId={projectId} canWrite={project.canWrite} />
+      </WorkspaceSidePanel>
+    );
+  }
 
   const showChat = !compact || mobileTab === 'chat';
   const showWorkspace = !compact || mobileTab === 'preview';
@@ -207,15 +256,22 @@ export function DesignWorkspace({ project, me }: { project: DesignProjectDetail;
           />
           <div className="flex min-h-0 flex-1">
             {!compact && drawerOpen ? drawer('w-60 shrink-0 border-r border-border-light') : null}
-            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-              <FileView
-                key={activePath}
-                project={project}
-                me={me}
-                file={activeFile}
-                path={activePath}
-                revision={revision}
-              />
+            <div
+              ref={areaRef}
+              data-testid="design-workspace-area"
+              className="relative flex min-h-0 min-w-0 flex-1 flex-col md:flex-row"
+            >
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+                <FileView
+                  key={activePath}
+                  project={project}
+                  me={me}
+                  file={activeFile}
+                  path={activePath}
+                  revision={revision}
+                />
+              </div>
+              {sidePanel}
             </div>
           </div>
         </section>
@@ -237,10 +293,17 @@ export function DesignWorkspace({ project, me }: { project: DesignProjectDetail;
       <div aria-live="polite" className="sr-only">
         {previewUpdated ? localize('workspace.layout.preview_updated') : ''}
       </div>
+      <div aria-live="polite" data-testid="design-plan-announcement" className="sr-only">
+        {planAnnouncement}
+      </div>
     </main>
   );
 
-  return <WorkspaceTabsProvider onFocus={focusTab}>{workspace}</WorkspaceTabsProvider>;
+  return (
+    <JuryProvider projectId={projectId} enabled={juryEnabled} reviewPath={reviewPath}>
+      <WorkspaceTabsProvider onFocus={focusTab}>{workspace}</WorkspaceTabsProvider>
+    </JuryProvider>
+  );
 }
 
 function GatedPage({ children }: { children: ReactNode }) {

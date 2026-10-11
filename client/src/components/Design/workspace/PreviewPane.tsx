@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
-import { useAtom } from 'jotai';
 import { X } from 'lucide-react';
+import { useAtom, useAtomValue } from 'jotai';
 import { Spinner, useMediaQuery } from '@librechat/client';
 import type { ReactNode } from 'react';
 import type { DesignMe, DesignProjectDetail } from '../api/types';
+import { deviceAtom, previewHighlightAtom, workspaceModeAtom, zoomAtom } from '../state/atoms';
 import { PREVIEW_REFERRER_POLICY, PREVIEW_SANDBOX } from '../preview/host-protocol';
-import { deviceAtom, workspaceModeAtom, zoomAtom } from '../state/atoms';
 import { usePreviewBridge } from '../preview/use-preview-bridge';
 import { COMPACT_LAYOUT_QUERY, modePanelLayout } from './layout';
 import PreviewToolbar, { toolbarButton } from './PreviewToolbar';
@@ -37,6 +37,7 @@ export default function PreviewPane({
   const [device, setDevice] = useAtom(deviceAtom);
   const [zoom, setZoom] = useAtom(zoomAtom);
   const [mode, setMode] = useAtom(workspaceModeAtom);
+  const highlight = useAtomValue(previewHighlightAtom);
   const modes = availableModes();
   const extension = modeExtension(mode);
   const previewUrl = usePreviewUrlQuery({ projectId: project.projectId, path });
@@ -49,7 +50,7 @@ export default function PreviewPane({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const panelId = useId();
   const geometry = previewGeometry(device, zoom, area);
-  const { reload, subscribe } = bridge;
+  const { reload, subscribe, ready, send } = bridge;
   const { refetch, data } = previewUrl;
   const { Overlay, Panel, opensPanelOn } = extension;
   const panelLayout = modePanelLayout(compact, row.width);
@@ -77,6 +78,14 @@ export default function PreviewPane({
   useEffect(() => {
     setLoaded(false);
   }, [bridge.src]);
+
+  const viewportWidth = geometry.viewport.width;
+  useEffect(() => {
+    if (!highlight || highlight.path !== path || !ready) {
+      return;
+    }
+    send({ type: 'etus:highlight', selector: highlight.selector });
+  }, [highlight, path, ready, send, device, viewportWidth]);
 
   useEffect(() => {
     if (mode !== extension.mode) {

@@ -240,3 +240,99 @@ export interface CompanyDefaultChange {
   designSystemId: string;
   organizationId: string;
 }
+
+export type PlanTaskType = 'prototype' | 'deck' | 'marketing';
+export type PlanItemStatus = 'pending' | 'in_progress' | 'done' | 'skipped';
+
+export interface DesignPlanItem {
+  id: string;
+  title: string;
+  status: PlanItemStatus;
+  note: string | null;
+}
+
+export interface DesignPlan {
+  planId: string;
+  projectId: string;
+  conversationId: string | null;
+  taskType: PlanTaskType;
+  direction: { name: string; summary: string; designSystemId?: string | null };
+  items: DesignPlanItem[];
+  frozenAt: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export type ReviewDimension = 'visual' | 'brand' | 'accessibility' | 'copy';
+export type ReviewDevice = 'mobile' | 'tablet' | 'desktop';
+
+export interface ReviewFinding {
+  dimension: ReviewDimension;
+  issue: string;
+  where?: string;
+  fix: string;
+}
+
+export interface ReviewMustFix extends ReviewFinding {
+  severity: 'critical' | 'major';
+  source: 'judge' | 'axe';
+  rule?: string;
+}
+
+export interface ReviewAxeFact {
+  rule: string;
+  impact: string | null;
+  help: string;
+  nodeCount: number;
+  targets: string[];
+  summary: string;
+  devices: ReviewDevice[];
+}
+
+export interface ReviewFacts {
+  axeViolations: number;
+  horizontalScrollAt390: boolean | null;
+  consoleErrors: number;
+  fontsLoaded: string[];
+  violations: ReviewAxeFact[];
+}
+
+export interface ReviewScreenshot {
+  device: ReviewDevice;
+  part: number;
+  parts: number;
+  width: number;
+  height: number;
+  url: string | null;
+}
+
+export interface DesignReview {
+  reviewId: string;
+  jobId: string;
+  projectId: string;
+  path: string;
+  round: number;
+  maxRounds: number;
+  model: string;
+  scores: Record<ReviewDimension, number>;
+  weightedScore: number;
+  threshold: number;
+  ship: boolean;
+  mustFix: ReviewMustFix[];
+  niceToHave: ReviewFinding[];
+  summary: string | null;
+  facts: ReviewFacts;
+  screenshots: ReviewScreenshot[];
+  costUsd: number | null;
+}
+
+export type ReviewOutcome =
+  | ({ status: 'succeeded' } & DesignReview)
+  | { status: 'running'; jobId: string; reviewId: string; projectId: string }
+  | {
+      status: 'round_limit';
+      projectId: string;
+      path: string;
+      maxRounds: number;
+      best: DesignReview | null;
+    };

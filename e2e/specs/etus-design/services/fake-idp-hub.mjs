@@ -30,6 +30,7 @@ export const PERSONAS = {
   bia: { name: 'Bia Colaboradora', permissions: COLLABORATOR },
   carla: { name: 'Carla Admin', permissions: ADMIN },
   davi: { name: 'Davi Sem Acesso', permissions: [] },
+  eva: { name: 'Eva Sem Júri', permissions: ['projects.use'] },
 };
 
 const emailOf = (persona) => `${persona}@etus.test`;
@@ -383,6 +384,11 @@ async function admin(req, res) {
   const url = new URL(req.url, 'http://admin');
   if (url.pathname === '/__calls') return send(res, 200, calls);
   if (url.pathname === '/__company') return send(res, 200, companyValues);
+  if (url.pathname === '/__forward-token' && req.method === 'POST') {
+    const { persona } = JSON.parse((await readBody(req)) || '{}');
+    if (!PERSONAS[persona]) return send(res, 404, { error: 'unknown_persona' });
+    return send(res, 200, { token: forwardToken(subOf(persona)) });
+  }
   if (url.pathname === '/__permissions' && req.method === 'POST') {
     const { persona, permissions } = JSON.parse((await readBody(req)) || '{}');
     if (permissions) overrides.set(persona, permissions);

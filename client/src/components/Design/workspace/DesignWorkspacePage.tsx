@@ -27,6 +27,7 @@ import { WorkspaceTabsProvider } from './workspace-tabs';
 import { usePendingBrief } from '../state/pending-brief';
 import DesignChatSlot from '../chat/DesignChatSlot';
 import ChatResizeHandle from './ChatResizeHandle';
+import { COMPACT_LAYOUT_QUERY } from './layout';
 import WorkspaceHeader from './WorkspaceHeader';
 import DesignPage from '../common/DesignPage';
 import { useDesignAccess } from '../access';
@@ -37,7 +38,7 @@ import FileTabs from './FileTabs';
 import FileView from './FileView';
 import { cn } from '~/utils';
 
-export const COMPACT_LAYOUT_QUERY = '(max-width: 767px)';
+export { COMPACT_LAYOUT_QUERY } from './layout';
 
 function renameInTabs(tabs: string[], from: string, to: string) {
   return tabs.map((path) => (path === from ? to : path));
@@ -189,7 +190,10 @@ export function DesignWorkspace({ project, me }: { project: DesignProjectDetail;
           aria-labelledby={compact ? 'design-tab-preview' : undefined}
           aria-label={compact ? undefined : localize('workspace.layout.workspace')}
           hidden={!showWorkspace}
-          className={cn('min-h-0 min-w-0 flex-1 flex-col', showWorkspace && 'flex')}
+          className={cn(
+            'relative isolate min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
+            showWorkspace && 'flex',
+          )}
         >
           <FileTabs
             tabs={openTabs}

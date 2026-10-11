@@ -9,4 +9,5 @@ export const inspectMode: WorkspaceModeExtension = {
   icon: PencilLine,
   labelKey: 'workspace.mode.inspect',
   Panel: InspectPanel,
+  opensPanelOn: () => true,
 };

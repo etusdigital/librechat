@@ -119,7 +119,9 @@
       "delete_name": "Nome do projeto para confirmar",
       "delete_confirm": "Apagar projeto",
       "delete_error": "Não foi possível apagar o projeto.",
-      "design_system_change": "Trocar o design system"
+      "design_system_change": "Trocar o design system",
+      "sidebar_show": "Mostrar o menu do chat",
+      "sidebar_hide": "Recolher o menu do chat"
     },
     "tabs": {
       "label": "Arquivos abertos",
@@ -173,6 +175,8 @@
       "mode": "Modo",
       "refresh": "Atualizar prévia",
       "open_tab": "Abrir em nova aba",
+      "panel_show": "Mostrar o painel ({{mode}})",
+      "panel_hide": "Recolher o painel ({{mode}})",
       "loading": "Carregando a prévia",
       "error": "Não foi possível carregar a prévia.",
       "frame_title": "Prévia de {{path}}"

@@ -9,6 +9,7 @@ import WorkspaceHeaderActions from './header/WorkspaceHeaderActions';
 import { useUpdateDesignProjectMutation } from '../api/queries';
 import DesignSystemControl from './header/DesignSystemControl';
 import OpenSidebar from '~/components/Chat/Menus/OpenSidebar';
+import ChatSidebarToggle from './header/ChatSidebarToggle';
 import { designErrorMessageKey } from '../api/errors';
 import { NotificationSeverity } from '~/common';
 import { DESIGN_HOME_PATH } from '../paths';
@@ -149,7 +150,11 @@ export default function WorkspaceHeader({
   const [editing, setEditing] = useState(false);
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border-light bg-presentation px-2 md:px-3">
-      {compact ? <OpenSidebar className="size-9 shrink-0" /> : null}
+      {compact ? (
+        <OpenSidebar className="size-9 shrink-0" />
+      ) : (
+        <ChatSidebarToggle className={iconButton} />
+      )}
       <Link to={DESIGN_HOME_PATH} aria-label={localize('project_back')} className={iconButton}>
         <ArrowLeft className="size-5" aria-hidden="true" />
       </Link>

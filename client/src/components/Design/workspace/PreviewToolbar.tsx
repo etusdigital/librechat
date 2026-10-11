@@ -1,4 +1,13 @@
-import { ExternalLink, Maximize, Monitor, RefreshCw, Smartphone, Tablet } from 'lucide-react';
+import {
+  ExternalLink,
+  Maximize,
+  Monitor,
+  PanelRightClose,
+  PanelRightOpen,
+  RefreshCw,
+  Smartphone,
+  Tablet,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { DeviceId, WorkspaceMode, ZoomLevel } from '../state/atoms';
@@ -39,6 +48,7 @@ export default function PreviewToolbar({
   onZoom,
   onMode,
   onRefresh,
+  panel,
 }: {
   leading?: ReactNode;
   device: DeviceId;
@@ -50,6 +60,7 @@ export default function PreviewToolbar({
   onZoom: (zoom: ZoomLevel) => void;
   onMode: (mode: WorkspaceMode) => void;
   onRefresh: () => void;
+  panel?: { open: boolean; controls: string; label: string; onToggle: () => void };
 }) {
   const localize = useDesignLocalize();
   return (
@@ -116,6 +127,24 @@ export default function PreviewToolbar({
         </div>
       ) : null}
       <div className="ml-auto flex gap-0.5">
+        {panel ? (
+          <button
+            type="button"
+            aria-expanded={panel.open}
+            aria-controls={panel.controls}
+            aria-label={panel.label}
+            title={panel.label}
+            onClick={panel.onToggle}
+            data-testid="design-mode-panel-toggle"
+            className={cn(toolbarButton, panel.open && pressed)}
+          >
+            {panel.open ? (
+              <PanelRightClose className="size-4" aria-hidden="true" />
+            ) : (
+              <PanelRightOpen className="size-4" aria-hidden="true" />
+            )}
+          </button>
+        ) : null}
         <button
           type="button"
           aria-label={localize('workspace.preview.refresh')}

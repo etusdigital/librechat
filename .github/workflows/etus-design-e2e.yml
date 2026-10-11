@@ -1,9 +1,9 @@
 name: Etus Design e2e
 
-# Runs the Design screen suite (e2e/specs/etus-design) against the chat image built from the PR,
-# the production nginx of etus-design and the design-service, renderer and egress images pinned in
-# e2e/specs/etus-design/etus-design.ref. ETUS_DESIGN_READ_TOKEN must read the private
-# evolution-foundation/etus-design repository and its GHCR packages.
+# Runs the Design screen suite (e2e/specs/etus-design) against the chat image built from the PR and
+# the production nginx, design-service, renderer and egress of etus-design, built from the commit
+# pinned in e2e/specs/etus-design/etus-design.ref. ETUS_DESIGN_READ_TOKEN must read the private
+# evolution-foundation/etus-design repository.
 on:
   pull_request:
     branches: [etus]
@@ -63,15 +63,12 @@ jobs:
       - name: Require the etus-design read token
         if: env.ETUS_DESIGN_READ_TOKEN == ''
         run: |
-          echo "::error::Configure the ETUS_DESIGN_READ_TOKEN secret (read access to evolution-foundation/etus-design and its GHCR packages)."
+          echo "::error::Configure the ETUS_DESIGN_READ_TOKEN secret (read access to evolution-foundation/etus-design)."
           exit 1
 
       - name: Pinned etus-design commit
         id: design
-        run: |
-          ref=$(tr -d '[:space:]' < e2e/specs/etus-design/etus-design.ref)
-          echo "ref=$ref" >> "$GITHUB_OUTPUT"
-          echo "tag=${ref::7}" >> "$GITHUB_OUTPUT"
+        run: echo "ref=$(tr -d '[:space:]' < e2e/specs/etus-design/etus-design.ref)" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v4
         with:
@@ -79,7 +76,6 @@ jobs:
           ref: ${{ steps.design.outputs.ref }}
           token: ${{ env.ETUS_DESIGN_READ_TOKEN }}
           path: .etus-design
-          sparse-checkout: design-service/deploy
 
       - name: Log in to Docker Hub so base image pulls skip the anonymous rate limit
         continue-on-error: true
@@ -89,13 +85,36 @@ jobs:
           username: ${{ env.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ env.ETUS_DESIGN_READ_TOKEN }}
-
       - uses: docker/setup-buildx-action@v3
+
+      - name: Build the design-service image from the pinned commit
+        uses: docker/build-push-action@v6
+        with:
+          context: .etus-design
+          file: .etus-design/design-service/Dockerfile
+          load: true
+          tags: etus-design-e2e/design-service:local
+          cache-from: type=gha,scope=etus-design-service
+          cache-to: type=gha,mode=max,scope=etus-design-service
+
+      - name: Build the renderer image from the pinned commit
+        uses: docker/build-push-action@v6
+        with:
+          context: .etus-design
+          file: .etus-design/design-service/renderer/Dockerfile
+          load: true
+          tags: etus-design-e2e/design-renderer:local
+          cache-from: type=gha,scope=etus-design-renderer
+          cache-to: type=gha,mode=max,scope=etus-design-renderer
+
+      - name: Build the egress image from the pinned commit
+        uses: docker/build-push-action@v6
+        with:
+          context: .etus-design/design-service/egress
+          load: true
+          tags: etus-design-e2e/design-egress:local
+          cache-from: type=gha,scope=etus-design-egress
+          cache-to: type=gha,mode=max,scope=etus-design-egress
 
       - name: Build the chat image of this PR
         uses: docker/build-push-action@v6
@@ -112,16 +131,9 @@ jobs:
       - name: Run the suite
         env:
           ETUS_DESIGN_DIR: ${{ github.workspace }}/.etus-design
-          ETUS_DESIGN_SERVICE_IMAGE: ghcr.io/evolution-foundation/etus-design-service:${{ steps.design.outputs.tag }}
-          ETUS_DESIGN_RENDERER_IMAGE: ghcr.io/evolution-foundation/etus-design-renderer:${{ steps.design.outputs.tag }}
-          ETUS_DESIGN_EGRESS_IMAGE: ghcr.io/evolution-foundation/etus-design-egress:${{ steps.design.outputs.tag }}
           E2E_SKIP_BUILD: '1'
           E2E_RESULTS_DIR: ${{ github.workspace }}/etus-design-e2e-results
-        run: |
-          docker pull "$ETUS_DESIGN_SERVICE_IMAGE"
-          docker pull "$ETUS_DESIGN_RENDERER_IMAGE"
-          docker pull "$ETUS_DESIGN_EGRESS_IMAGE"
-          e2e/specs/etus-design/run.sh
+        run: e2e/specs/etus-design/run.sh
 
       - name: Keep the report, traces and service logs
         if: always()

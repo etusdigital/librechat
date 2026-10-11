@@ -44,7 +44,7 @@ services:
       - certs:/certs:ro
     networks:
       default:
-        aliases: [chat.etus.test, idp.etus.test, hub.etus.test]
+        aliases: [chat.etus.test, idp.etus.test, hub.etus.test, router.etus.test]
     healthcheck:
       test:
         [
@@ -65,6 +65,8 @@ services:
       init:
         condition: service_completed_successfully
       fake-idp-hub:
+        condition: service_started
+      fake-llm:
         condition: service_started
 
   api:

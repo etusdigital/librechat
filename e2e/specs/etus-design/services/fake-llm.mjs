@@ -4,6 +4,30 @@ const PORT = Number(process.env.FAKE_LLM_PORT ?? 4799);
 const CHUNK_MS = Number(process.env.FAKE_LLM_CHUNK_MS ?? 120);
 const PROJECT_PREFIX = '[Projeto Etus Design]: ';
 const requests = [];
+const JURY_COST_USD = '0.0123';
+
+export const JURY_VERDICT = {
+  scores: { visual: 7.5, brand: 8.5, accessibility: 7, copy: 8 },
+  mustFix: [
+    {
+      dimension: 'copy',
+      severity: 'major',
+      issue: 'Título genérico demais para a oferta',
+      where: 'section.hero h1',
+      fix: 'Diga em uma frase o que o produto faz',
+    },
+  ],
+  niceToHave: [
+    {
+      dimension: 'visual',
+      issue: 'Espaço vertical irregular entre as seções',
+      fix: 'Use a escala de espaçamento do DESIGN.md',
+    },
+  ],
+  summary: 'Base boa, com contraste e título a corrigir.',
+};
+
+const isJury = (body) => body?.response_format?.type === 'json_schema';
 
 const textOf = (message) => {
   if (!message) return '';
@@ -70,6 +94,13 @@ http
     });
     req.on('end', async () => {
       if (req.url === '/__requests') return json(res, 200, requests);
+      if (req.url === '/v1/etus/hub-grants' && req.method === 'POST') {
+        if (!req.headers['x-etus-hub-token']) return json(res, 401, { error: 'no_hub_token' });
+        return json(res, 201, {
+          grant: `rhg_e2e_${Date.now().toString(36)}`,
+          expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+        });
+      }
       if (req.url?.startsWith('/v1/models')) {
         return json(res, 200, {
           data: [{ id: 'cc/claude-sonnet-5' }, { id: 'rapido' }].map((model) => ({
@@ -83,8 +114,30 @@ http
         return undefined;
       }
       const body = JSON.parse(raw || '{}');
-      const seen = summarize(body);
+      const seen = { ...summarize(body), jury: isJury(body) };
       requests.push(seen);
+      if (seen.jury) {
+        res.writeHead(200, {
+          'content-type': 'application/json',
+          'x-omniroute-response-cost': JURY_COST_USD,
+        });
+        res.end(
+          JSON.stringify({
+            id: `chatcmpl-${requests.length}`,
+            object: 'chat.completion',
+            model: body.model,
+            choices: [
+              {
+                index: 0,
+                message: { role: 'assistant', content: JSON.stringify(JURY_VERDICT) },
+                finish_reason: 'stop',
+              },
+            ],
+            usage: { prompt_tokens: 10, completion_tokens: 10, total_tokens: 20 },
+          }),
+        );
+        return undefined;
+      }
       const text = reply(seen);
       const id = `chatcmpl-${requests.length}`;
       if (!body.stream) {

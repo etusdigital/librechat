@@ -7,7 +7,7 @@ if [ ! -f /certs/edge.crt ]; then
     -keyout /certs/ca.key -out /certs/ca.crt 2>/dev/null
   openssl req -newkey rsa:2048 -nodes -subj /CN=chat.etus.test \
     -keyout /certs/edge.key -out /certs/edge.csr 2>/dev/null
-  printf 'subjectAltName=DNS:chat.etus.test,DNS:idp.etus.test,DNS:hub.etus.test\nbasicConstraints=CA:FALSE\nextendedKeyUsage=serverAuth\n' > /certs/edge.ext
+  printf 'subjectAltName=DNS:chat.etus.test,DNS:idp.etus.test,DNS:hub.etus.test,DNS:router.etus.test\nbasicConstraints=CA:FALSE\nextendedKeyUsage=serverAuth\n' > /certs/edge.ext
   openssl x509 -req -in /certs/edge.csr -CA /certs/ca.crt -CAkey /certs/ca.key -CAcreateserial \
     -days 3 -extfile /certs/edge.ext -out /certs/edge.crt 2>/dev/null
   rm -f /certs/ca.key /certs/edge.csr /certs/edge.ext /certs/ca.srl
